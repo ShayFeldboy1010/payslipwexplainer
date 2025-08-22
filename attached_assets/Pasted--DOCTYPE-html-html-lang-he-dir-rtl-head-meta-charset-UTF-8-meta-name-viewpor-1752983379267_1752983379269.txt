@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>פענוח תלוש שכר עם AI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;600;700&display=swap');
+        
+        body {
+            font-family: 'Rubik', sans-serif;
+        }
+        
+        .chat-container {
+            scrollbar-width: thin;
+            scrollbar-color: #3b82f6 #1e293b;
+        }
+        
+        .chat-container::-webkit-scrollbar {
+            width: 6px;
+        }
+        
+        .chat-container::-webkit-scrollbar-track {
+            background: #1e293b;
+        }
+        
+        .chat-container::-webkit-scrollbar-thumb {
+            background-color: #3b82f6;
+            border-radius: 20px;
+        }
+        
+        .file-drop-area {
+            border: 2px dashed #3b82f6;
+            transition: all 0.3s ease;
+        }
+        
+        .file-drop-area.active {
+            border-color: #10b981;
+            background-color: rgba(16, 185, 129, 0.05);
+        }
+        
+        .loading-dots {
+            display: inline-flex;
+            align-items: center;
+        }
+        
+        .loading-dots span {
+            width: 8px;
+            height: 8px;
+            margin: 0 2px;
+            background-color: #9ca3af;
+            border-radius: 50%;
+            display: inline-block;
+            animation: bounce 1.4s infinite ease-in-out both;
+        }
+        
+        .loading-dots span:nth-child(1) {
+            animation-delay: -0.32s;
+        }
+        
+        .loading-dots span:nth-child(2) {
+            animation-delay: -0.16s;
+        }
+        
+        @keyframes bounce {
+            0%, 80%, 100% { 
+                transform: scale(0);
+            } 40% { 
+                transform: scale(1);
+            }
+        }
+        
+        .skeleton {
+            animation: skeleton-loading 1s linear infinite alternate;
+        }
+        
+        @keyframes skeleton-loading {
+            0% {
+                background-color: hsl(200, 20%, 20%);
+            }
+            100% {
+                background-color: hsl(200, 20%, 30%);
+            }
+        }
+    </style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen">
+    <div class="container mx-auto px-4 py-6 max-w-6xl">
+        <!-- Header -->
+        <header class="flex items-center justify-between mb-8">
+            <div class="flex items-center space-x-3 space-x-reverse">
+                <div class="bg-blue-600 p-3 rounded-xl">
+                    <i data-lucide="file-text" class="w-6 h-6 text-white"></i>
+                </div>
+                <h1 class="text-2xl font-bold">פענוח תלוש שכר עם AI</h1>
+            </div>
+            <button id="theme-toggle" class="p-2 rounded-full hover:bg-slate-800 transition-colors">
+                <i data-lucide="sun" class="w-5 h-5 hidden"></i>
+                <i data-lucide="moon" class="w-5 h-5"></i>
+            </button>
+        </header>
+        
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Left sidebar - File upload -->
+            <div class="lg:col-span-1 bg-slate-800 rounded-xl p-6">
+                <h2 class="text-lg font-semibold mb-4">העלאת תלוש שכר</h2>
+                
+                <!-- Single file upload -->
+                <div id="file-drop-area" class="file-drop-area rounded-lg p-8 text-center cursor-pointer mb-6">
+                    <div class="flex flex-col items-center justify-center space-y-3">
+                        <i data-lucide="upload" class="w-10 h-10 text-blue-400"></i>
+                        <p class="text-sm text-slate-300">גרור ושחרר קובץ PDF לכאן</p>
+                        <p class="text-xs text-slate-400">או לחץ כדי לבחור קובץ</p>
+                        <input type="file" id="file-input" class="hidden" accept=".pdf">
+                    </div>
+                </div>
+                
+                <!-- Or upload two for comparison -->
+                <div class="border-t border-slate-700 pt-6">
+                    <h3 class="text-sm font-medium mb-3">השוואה בין תלושים</h3>
+                    <div class="space-y-4">
+                        <div class="flex items-center space-x-3 space-x-reverse">
+                            <div class="bg-slate-700 p-2 rounded-lg">
+                                <i data-lucide="file-input" class="w-5 h-5 text-blue-400"></i>
+                            </div>
+                            <button id="compare-btn" class="flex-1 bg-slate-700 hover:bg-slate-600 text-sm py-2 px-4 rounded-lg transition-colors">
+                                העלה שני תלושים להשוואה
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- File preview (hidden by default) -->
+                <div id="file-preview" class="mt-6 hidden">
+                    <h3 class="text-sm font-medium mb-3">קבצים שהועלו</h3>
+                    <div id="uploaded-files" class="space-y-2"></div>
+                </div>
+            </div>
+            
+            <!-- Main chat area -->
+            <div class="lg:col-span-2 bg-slate-800 rounded-xl p-0 overflow-hidden flex flex-col">
+                <!-- Chat header -->
+                <div class="bg-slate-700 px-6 py-4 border-b border-slate-600">
+                    <div class="flex items-center space-x-3 space-x-reverse">
+                        <div class="bg-blue-600 p-2 rounded-full">
+                            <i data-lucide="bot" class="w-5 h-5 text-white"></i>
+                        </div>
+                        <h2 class="font-medium">הבלש - עוזר פענוח התלושים של שלכם</h2>
+                    </div>
+                </div>
+                
+                <!-- Chat messages container -->
+                <div id="chat-container" class="flex-1 overflow-y-auto p-6 space-y-4 chat-container">
+                    <!-- Initial welcome message -->
+                    <div class="flex items-start space-x-3 space-x-reverse">
+                        <div class="bg-slate-700 p-2 rounded-full">
+                            <i data-lucide="bot" class="w-5 h-5 text-blue-400"></i>
+                        </div>
+                        <div class="bg-slate-700 rounded-xl p-4 max-w-[85%]">
+                            <p>שלום! אני כאן כדי לעזור לך לפענח את תלוש השכר שלך. אתה יכול:</p>
+                            <ul class="list-disc list-inside mt-2 space-y-1 text-sm text-slate-300">
+                                <li>להעלות תלוש שכר בודד (PDF או תמונה)</li>
+                                <li>להעלות שני תלושים להשוואה ביניהם</li>
+                                <li>לשאול שאלות ספציפיות על התלוש</li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <!-- Example user message (hidden by default) -->
+                    <div id="example-user-message" class="hidden justify-end">
+                        <div class="bg-blue-600 rounded-xl p-4 max-w-[85%]">
+                            <p>העליתי את תלוש השכר שלי, תוכל להסביר מה המשמעות של הסעיף "ניכוי רכב"?</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Example AI response (hidden by default) -->
+                    <div id="example-ai-response" class="hidden">
+                        <div class="flex items-start space-x-3 space-x-reverse">
+                            <div class="bg-slate-700 p-2 rounded-full">
+                                <i data-lucide="bot" class="w-5 h-5 text-blue-400"></i>
+                            </div>
+                            <div class="bg-slate-700 rounded-xl p-4 max-w-[85%]">
+                                <p>כמובן! ניכוי רכב מתייחס לסכום שמנוכה ממשכורתך עבור שימוש ברכב חברה. זה בדרך כלל כולל:</p>
+                                <ul class="list-disc list-inside mt-2 space-y-1 text-sm text-slate-300">
+                                    <li>הוצאות דלק</li>
+                                    <li>ביטוח רכב</li>
+                                    <li>תשלום חניה</li>
+                                </ul>
+                                <p class="mt-2">בתלוש הנוכחי שלך, הניכוי עומד על 450 ש"ח.</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Loading indicator (hidden by default) -->
+                    <div id="loading-indicator" class="hidden">
+                        <div class="flex items-start space-x-3 space-x-reverse">
+                            <div class="bg-slate-700 p-2 rounded-full">
+                                <i data-lucide="bot" class="w-5 h-5 text-blue-400"></i>
+                            </div>
+                            <div class="bg-slate-700 rounded-xl p-4 max-w-[85%]">
+                                <div class="loading-dots">
+                                    <span></span>
+                                    <span></span>
+                                    <span></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Analysis results will be inserted here -->
+                    <div id="analysis-results"></div>
+                    
+                    <!-- Comparison table (hidden by default) -->
+                    <div id="comparison-table" class="hidden">
+                        <div class="flex items-start space-x-3 space-x-reverse">
+                            <div class="bg-slate-700 p-2 rounded-full">
+                                <i data-lucide="bot" class="w-5 h-5 text-blue-400"></i>
+                            </div>
+                            <div class="bg-slate-700 rounded-xl p-4 w-full overflow-x-auto">
+                                <h3 class="font-medium mb-3">השוואה בין תלושים</h3>
+                                <table class="min-w-full divide-y divide-slate-600 text-sm">
+                                    <thead>
+                                        <tr>
+                                            <th class="px-4 py-2 text-right font-medium">סעיף</th>
+                                            <th class="px-4 py-2 text-right font-medium">תלוש 1</th>
+                                            <th class="px-4 py-2 text-right font-medium">תלוש 2</th>
+                                            <th class="px-4 py-2 text-right font-medium">שינוי</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="comparison-data" class="divide-y divide-slate-700">
+                                        <!-- Data will be inserted here -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- User input area -->
+                <div class="border-t border-slate-600 p-4">
+                    <div class="relative">
+                        <input 
+                            id="user-input" 
+                            type="text" 
+                            placeholder="שאל שאלה על התלוש..." 
+                            class="w-full bg-slate-700 rounded-full py-3 px-5 pr-12 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        >
+                        <button id="send-btn" class="absolute left-3 top-1/2 transform -translate-y-1/2 bg-blue-600 p-2 rounded-full hover:bg-blue-500 transition-colors">
+                            <i data-lucide="send" class="w-5 h-5 text-white"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Initialize Lucide icons
+        lucide.createIcons();
+        
+        // Theme toggle functionality
+        const themeToggle = document.getElementById('theme-toggle');
+        const sunIcon = themeToggle.querySelector('[data-lucide="sun"]');
+        const moonIcon = themeToggle.querySelector('[data-lucide="moon"]');
+        
+        themeToggle.addEventListener('click', () => {
+            document.documentElement.classList.toggle('dark');
+            sunIcon.classList.toggle('hidden');
+            moonIcon.classList.toggle('hidden');
+            
+            if (document.documentElement.classList.contains('dark')) {
+                document.body.classList.remove('bg-gray-100');
+                document.body.classList.add('bg-slate-900');
+            } else {
+                document.body.classList.remove('bg-slate-900');
+                document.body.classList.add('bg-gray-100');
+            }
+        });
+        
+        // File upload functionality
+        const fileDropArea = document.getElementById('file-drop-area');
+        const fileInput = document.getElementById('file-input');
+        const filePreview = document.getElementById('file-preview');
+        const uploadedFiles = document.getElementById('uploaded-files');
+        const chatContainer = document.getElementById('chat-container');
+        const analysisResults = document.getElementById('analysis-results');
+        const loadingIndicator = document.getElementById('loading-indicator');
+        const compareBtn = document.getElementById('compare-btn');
+        const comparisonTable = document.getElementById('comparison-table');
+        const comparisonData = document.getElementById('comparison-data');
+        
+        // Prevent default drag behaviors
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            fileDropArea.addEventListener(eventName, preventDefaults, false);
+        });
+        
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+        
+        // Highlight drop area when item is dragged over it
+        ['dragenter', 'dragover'].forEach(eventName => {
+            fileDropArea.addEventListener(eventName, highlight, false);
+        });
+        
+        ['dragleave', 'drop'].forEach(eventName => {
+            fileDropArea.addEventListener(eventName, unhighlight, false);
+        });
+        
+        function highlight() {
+            fileDropArea.classList.add('active');
+        }
+        
+        function unhighlight() {
+            fileDropArea.classList.remove('active');
+        }
+        
+        // Handle dropped files
+        fileDropArea.addEventListener('drop', handleDrop, false);
+        
+        function handleDrop(e) {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            handleFiles(files);
+        }
+        
+        // Handle selected files
+        fileInput.addEventListener('change', function() {
+            handleFiles(this.files);
+        });
+        
+        fileDropArea.addEventListener('click', function() {
+            fileInput.click();
+        });
+        
+        function handleFiles(files) {
+            if (files.length > 0) {
+                // Show loading indicator
+                loadingIndicator.classList.remove('hidden');
+                chatContainer.scrollTop = chatContainer.scrollHeight;
+                
+                // Simulate processing delay
+                setTimeout(() => {
+                    loadingIndicator.classList.add('hidden');
+                    
+                    // Show file preview
+                    filePreview.classList.remove('hidden');
+                    uploadedFiles.innerHTML = '';
+                    
+                    for (let i = 0; i < files.length; i++) {
+                        const file = files[i];
+                        const fileElement = document.createElement('div');
+                        fileElement.className = 'flex items-center space-x-3 space-x-reverse bg-slate-700 p-3 rounded-lg';
+                        fileElement.innerHTML = `
+                            <i data-lucide="file-text" class="w-5 h-5 text-blue-400"></i>
+                            <div class="flex-1 min-w-0">
+                                <p class="text-sm truncate">${file.name}</p>
+                                <p class="text-xs text-slate-400">${(file.size / 1024).toFixed(1)} KB</p>
+                            </div>
+                            <i data-lucide="check-circle" class="w-5 h-5 text-green-500"></i>
+                        `;
+                        uploadedFiles.appendChild(fileElement);
+                    }
+                    
+                    // Show analysis message
+                    const analysisMessage = document.createElement('div');
+                    analysisMessage.className = 'flex items-start space-x-3 space-x-reverse';
+                    analysisMessage.innerHTML = `
+                        <div class="bg-slate-700 p-2 rounded-full">
+                            <i data-lucide="bot" class="w-5 h-5 text-blue-400"></i>
+                        </div>
+                        <div class="bg-slate-700 rounded-xl p-4 max-w-[85%]">
+                            <p>תלוש השכר התקבל! מנתח כעת...</p>
+                        </div>
+                    `;
+                    analysisResults.appendChild(analysisMessage);
+                    chatContainer.scrollTop = chatContainer.scrollHeight;
+                    
+                    // Simulate analysis completion
+                    setTimeout(() => {
+                        // Replace loading message with results
+                        analysisResults.innerHTML = '';
+                        
+                        const resultsMessage = document.createElement('div');
+                        resultsMessage.className = 'flex items-start space-x-3 space-x-reverse';
+                        resultsMessage.innerHTML = `
+                            <div class="bg-slate-700 p-2 rounded-full">
+                                <i data-lucide="bot" class="w-5 h-5 text-blue-400"></i>
+                            </div>
+                            <div class="bg-slate-700 rounded-xl p-4 max-w-[85%]">
+                                <h3 class="font-medium mb-2">ניתוח תלוש שכר</h3>
+                                <div class="space-y-3">
+                                    <div>
+                                        <p class="text-sm text-slate-300">שכר ברוטו:</p>
+                                        <p class="font-medium">12,450 ש"ח</p>
+                                    </div>
+                                    <div>
+                                        <p class="text-sm text-slate-300">ניכויים:</p>
+                                        <p class="font-medium">2,780 ש"ח</p>
+                                        <ul class="text-xs text-slate-400 mt-1 space-y-1">
+                                            <li>מס הכנסה: 1,230 ש"ח</li>
+                                            <li>ביטוח לאומי: 850 ש"ח</li>
+                                            <li>הפקדה לקופת גמל: 700 ש"ח</li>
+                                        </ul>
+                                    </div>
+                                    <div>
+                                        <p class="text-sm text-slate-300">שכר נטו:</p>
+                                        <p class="font-medium text-green-500">9,670 ש"ח</p>
+                                    </div>
+                                </div>
+                                <p class="mt-3 text-sm">תוכל לשאול שאלות ספציפיות על התלוש בשורת ההודעות למטה.</p>
+                            </div>
+                        `;
+                        analysisResults.appendChild(resultsMessage);
+                        chatContainer.scrollTop = chatContainer.scrollHeight;
+                        lucide.createIcons();
+                    }, 2000);
+                }, 1000);
+            }
+        }
+        
+        // Compare functionality
+        compareBtn.addEventListener('click', function() {
+            fileInput.multiple = true;
+            fileInput.click();
+            
+            fileInput.addEventListener('change', function() {
+                if (this.files.length === 2) {
+                    handleFiles(this.files);
+                    
+                    // Simulate comparison analysis
+                    setTimeout(() => {
+                        comparisonTable.classList.remove('hidden');
+                        
+                        // Sample comparison data
+                        const comparisonItems = [
+                            { item: 'שכר ברוטו', slip1: '12,450 ש"ח', slip2: '13,200 ש"ח', change: '+750 ש"ח' },
+                            { item: 'מס הכנסה', slip1: '1,230 ש"ח', slip2: '1,400 ש"ח', change: '+170 ש"ח' },
+                            { item: 'ביטוח לאומי', slip1: '850 ש"ח', slip2: '900 ש"ח', change: '+50 ש"ח' },
+                            { item: 'קופת גמל', slip1: '700 ש"ח', slip2: '700 ש"ח', change: '0 ש"ח' },
+                            { item: 'שכר נטו', slip1: '9,670 ש"ח', slip2: '10,200 ש"ח', change: '+530 ש"ח' }
+                        ];
+                        
+                        comparisonData.innerHTML = '';
+                        comparisonItems.forEach(item => {
+                            const row = document.createElement('tr');
+                            row.innerHTML = `
+                                <td class="px-4 py-3">${item.item}</td>
+                                <td class="px-4 py-3">${item.slip1}</td>
+                                <td class="px-4 py-3">${item.slip2}</td>
+                                <td class="px-4 py-3 ${item.change.includes('+') ? 'text-green-500' : item.change.includes('-') ? 'text-red-500' : ''}">
+                                    ${item.change}
+                                </td>
+                            `;
+                            comparisonData.appendChild(row);
+                        });
+                        
+                        chatContainer.scrollTop = chatContainer.scrollHeight;
+                    }, 2500);
+                } else {
+                    alert('נא להעלות בדיוק שני קבצים להשוואה');
+                }
+            }, { once: true });
+        });
+        
+        // Chat functionality
+        const userInput = document.getElementById('user-input');
+        const sendBtn = document.getElementById('send-btn');
+        
+        function sendMessage() {
+            const message = userInput.value.trim();
+            if (message) {
+                // Add user message
+                const userMessage = document.createElement('div');
+                userMessage.className = 'flex justify-end';
+                userMessage.innerHTML = `
+                    <div class="bg-blue-600 rounded-xl p-4 max-w-[85%]">
+                        <p>${message}</p>
+                    </div>
+                `;
+                chatContainer.appendChild(userMessage);
+                chatContainer.scrollTop = chatContainer.scrollHeight;
+                
+                // Clear input
+                userInput.value = '';
+                
+                // Show loading indicator
+                const loading = document.createElement('div');
+                loading.className = 'flex items-start space-x-3 space-x-reverse';
+                loading.innerHTML = `
+                    <div class="bg-slate-700 p-2 rounded-full">
+                        <i data-lucide="bot" class="w-5 h-5 text-blue-400"></i>
+                    </div>
+                    <div class="bg-slate-700 rounded-xl p-4 max-w-[85%]">
+                        <div class="loading-dots">
+                            <span></span>
+                            <span></span>
+                            <span></span>
+                        </div>
+                    </div>
+                `;
+                chatContainer.appendChild(loading);
+                chatContainer.scrollTop = chatContainer.scrollHeight;
+                lucide.createIcons();
+                
+                // Simulate AI response
+                setTimeout(() => {
+                    // Remove loading indicator
+                    chatContainer.removeChild(loading);
+                    
+                    // Add AI response
+                    const aiResponse = document.createElement('div');
+                    aiResponse.className = 'flex items-start space-x-3 space-x-reverse';
+                    
+                    // Sample responses based on common questions
+                    let responseText = '';
+                    if (message.includes('מס') || message.includes('ניכוי')) {
+                        responseText = `
+                            <p>בתלוש זה שילמת ${message.includes('מס הכנסה') ? '1,230 ש"ח מס הכנסה' : '850 ש"ח ביטוח לאומי'}.</p>
+                            <p class="mt-2 text-sm text-slate-300">זהו ניכוי חובה לפי חוק, המחושב לפי מדרגות המס ושיעורי הביטוח הלאומי הקבועים בחוק.</p>
+                        `;
+                    } else if (message.includes('נטו') || message.includes('ברוטו')) {
+                        responseText = `
+                            <p>השכר ברוטו בתלוש זה הוא 12,450 ש"ח.</p>
+                            <p class="mt-1">לאחר ניכויים של 2,780 ש"ח, השכר נטו הוא 9,670 ש"ח.</p>
+                            <p class="mt-2 text-sm text-slate-300">הניכויים כוללים מס הכנסה, ביטוח לאומי והפקדות לקופת גמל.</p>
+                        `;
+                    } else if (message.includes('הפרש') || message.includes('השוואה')) {
+                        responseText = `
+                            <p>בהשוואה בין התלושים:</p>
+                            <ul class="list-disc list-inside mt-2 space-y-1 text-sm text-slate-300">
+                                <li>השכר ברוטו עלה ב-750 ש"ח</li>
+                                <li>מס ההכנסה עלה ב-170 ש"ח</li>
+                                <li>השכר נטו עלה ב-530 ש"ח</li>
+                            </ul>
+                        `;
+                    } else {
+                        responseText = `
+                            <p>אני יכול לעזור בהסבר על:</p>
+                            <ul class="list-disc list-inside mt-2 space-y-1 text-sm text-slate-300">
+                                <li>סעיפים ספציפיים בתלוש</li>
+                                <li>חישובי מס והפרשות</li>
+                                <li>השוואה בין תלושים</li>
+                                <li>זכויות עובד לפי החוק</li>
+                            </ul>
+                            <p class="mt-2 text-sm">נסה לנסח שאלה ספציפית יותר.</p>
+                        `;
+                    }
+                    
+                    aiResponse.innerHTML = `
+                        <div class="bg-slate-700 p-2 rounded-full">
+                            <i data-lucide="bot" class="w-5 h-5 text-blue-400"></i>
+                        </div>
+                        <div class="bg-slate-700 rounded-xl p-4 max-w-[85%]">
+                            ${responseText}
+                        </div>
+                    `;
+                    chatContainer.appendChild(aiResponse);
+                    chatContainer.scrollTop = chatContainer.scrollHeight;
+                    lucide.createIcons();
+                }, 1500);
+            }
+        }
+        
+        sendBtn.addEventListener('click', sendMessage);
+        
+        userInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+    </script>
+</body>
+</html>
