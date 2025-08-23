@@ -4,8 +4,9 @@ services:
     env: python
     plan: free
     buildCommand: pip install -r requirements.txt
-    startCommand: uvicorn src.api.main:app --host 0.0.0.0 --port $PORT
+    startCommand: PYTHONPATH=src uvicorn api.main:app --host 0.0.0.0 --port $PORT
     healthCheckPath: /healthz
+    autoDeploy: true
     envVars:
-      - key: OPENAI_API_KEY
+      - key: GROQ_API_KEY
         sync: false

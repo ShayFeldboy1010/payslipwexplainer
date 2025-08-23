@@ -1,10 +1,11 @@
 import os
 import sys
 
-sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
+# Ensure the project ``src`` directory is on the path for absolute imports
+sys.path.append(os.path.join(os.path.dirname(__file__), "..", "src"))
 
 from fastapi.testclient import TestClient
-from src.api.main import app
+from api.main import app
 
 client = TestClient(app)
 

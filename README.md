@@ -22,11 +22,11 @@ src/
 1. Copy the environment template and add your Groq key if available:
    ```bash
    cp .env.template .env
-   export OPENAI_API_KEY=<key>
+   export GROQ_API_KEY=<key>
    ```
-2. Run the API server:
+2. Run the API server locally:
    ```bash
-   uvicorn src.api.main:app --host 0.0.0.0 --port 8000
+   PYTHONPATH=src uvicorn api.main:app --reload --port 8000
    ```
 3. Upload a payslip (here we just send plain text for demonstration):
    ```bash
@@ -46,7 +46,7 @@ Run the unit tests with:
 pytest
 ```
 
-## Deployment to Render
+## Deploying to Render
 
 Deploy the API as a web service on Render using the provided `render.yaml` file.
 
@@ -54,10 +54,17 @@ Deploy the API as a web service on Render using the provided `render.yaml` file.
 2. Create a new **Web Service** on [Render](https://render.com/) and connect it to the repo.
    Render will pick up `render.yaml` automatically. If configuring manually, use:
    - Build Command: `pip install -r requirements.txt`
-   - Start Command: `uvicorn src.api.main:app --host 0.0.0.0 --port $PORT`
+   - Start Command: `PYTHONPATH=src uvicorn api.main:app --host 0.0.0.0 --port $PORT`
    - Health Check Path: `/healthz`
-3. Add the `OPENAI_API_KEY` environment variable in the Render dashboard.
+3. Add the `GROQ_API_KEY` environment variable in the Render dashboard.
 4. Deploy the service to receive a public URL for the API.
+
+Once deployed you can verify the service:
+
+```bash
+curl -I $RENDER_URL/
+curl -s $RENDER_URL/healthz
+```
 
 ## Validation checklist
 
