@@ -1,17 +1,21 @@
-from fastapi import FastAPI, File, UploadFile, HTTPException
+import logging
+import os
+import io
+import shutil
+from fastapi import FastAPI, HTTPException, Request, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, JSONResponse
+from typing import Optional, Tuple, List
 from pydantic import BaseModel
 import fitz  # PyMuPDF
 from PIL import Image
-import io
 from openai import OpenAI
-import os
 import sqlite3
 import datetime
 import hashlib
-import shutil
-from typing import Optional, List
+
+logging.basicConfig(level=logging.INFO)
+log = logging.getLogger("payslip")
 
 try:
     import pytesseract
@@ -398,39 +402,155 @@ class QuestionRequest(BaseModel):
 init_database()
 client = setup_api()
 
+
+async def get_uploaded_file(request: Request) -> Tuple[Optional[UploadFile], dict]:
+    """
+    Try to extract a single uploaded file from common field names.
+    Returns (file, meta) where meta includes debug info for logs.
+    """
+    meta = {"fields": [], "content_types": [], "sizes": []}
+    try:
+        form = await request.form()
+    except Exception as e:
+        log.exception("Failed reading multipart form")
+        raise HTTPException(status_code=400, detail="Failed to read form-data") from e
+
+    for k, v in form.items():
+        meta["fields"].append(k)
+        if isinstance(v, UploadFile):
+            meta["content_types"].append(getattr(v, "content_type", None))
+            try:
+                pos = v.file.tell()
+                v.file.seek(0, os.SEEK_END)
+                meta["sizes"].append(v.file.tell())
+                v.file.seek(pos)
+            except Exception:
+                meta["sizes"].append(None)
+
+    candidates = ["file", "pdf", "document", "upload", "payslip", "files", "files[]"]
+    for name in candidates:
+        if name in form:
+            item = form[name]
+            if isinstance(item, list) and item and isinstance(item[0], UploadFile):
+                return item[0], meta
+            if isinstance(item, UploadFile):
+                return item, meta
+
+    for v in form.values():
+        if isinstance(v, list):
+            for vv in v:
+                if isinstance(vv, UploadFile):
+                    return vv, meta
+        if isinstance(v, UploadFile):
+            return v, meta
+
+    return None, meta
+
 @app.post("/analyze-payslip")
-async def analyze_payslip(file: UploadFile = File(...)):
-    """Analyze uploaded payslip file"""
+async def analyze_payslip(request: Request):
+    file, meta = await get_uploaded_file(request)
+    log.info("POST /analyze-payslip fields=%s content_types=%s sizes=%s", meta.get("fields"), meta.get("content_types"), meta.get("sizes"))
+
     if not file:
-        raise HTTPException(status_code=400, detail="לא נבחר קובץ")
-    
-    # Read file content
-    file_content = await file.read()
-    file_hash = calculate_file_hash(file_content)
-    
-    # Extract text based on file type
-    if file.content_type == "application/pdf":
-        extracted_text = extract_text_from_pdf(file_content)
-    elif file.content_type.startswith("image/"):
-        extracted_text = extract_text_from_image(file_content)
+        return JSONResponse(
+            status_code=400,
+            content={"detail": "No file found in form-data. Expected field name 'file' (also accepts: pdf, document, upload, files).",
+                     "debug": meta},
+        )
+
+    ct = (file.content_type or "").lower()
+    log.info("Detected content-type: %s; filename: %s", ct, file.filename)
+
+    valid_pdf = ct in ["application/pdf", "application/x-pdf"]
+    valid_image = ct.startswith("image/")
+
+    try:
+        data = await file.read()
+    except Exception as e:
+        log.exception("Failed reading uploaded file")
+        raise HTTPException(status_code=400, detail="Failed to read uploaded file") from e
+    finally:
+        try:
+            await file.close()
+        except Exception:
+            pass
+
+    if not data or len(data) == 0:
+        return JSONResponse(status_code=400, content={"detail": "Uploaded file is empty"})
+
+    text = ""
+    if valid_pdf:
+        try:
+            doc = fitz.open(stream=data, filetype="pdf")
+            for page in doc:
+                direct = page.get_text("text") or ""
+                if direct.strip():
+                    text += direct + "\n"
+                else:
+                    if TESSERACT_AVAILABLE:
+                        pix = page.get_pixmap()
+                        img = Image.open(io.BytesIO(pix.tobytes("png")))
+                        try:
+                            page_text = pytesseract.image_to_string(img, lang="heb+eng")
+                        except Exception:
+                            page_text = pytesseract.image_to_string(img)
+                        text += (page_text or "") + "\n"
+            doc.close()
+        except Exception as e:
+            log.exception("PDF parse failed")
+            return JSONResponse(status_code=400, content={"detail": f"PDF parse failed: {str(e)[:200]}"})
+    elif valid_image:
+        if not TESSERACT_AVAILABLE:
+            return JSONResponse(
+                status_code=400,
+                content={"detail": "OCR is not available on server (missing tesseract). Upload a text-based PDF or enable OCR."},
+            )
+        try:
+            img = Image.open(io.BytesIO(data))
+            try:
+                text = pytesseract.image_to_string(img, lang="heb+eng")
+            except Exception:
+                text = pytesseract.image_to_string(img)
+        except Exception as e:
+            log.exception("Image OCR failed")
+            return JSONResponse(status_code=400, content={"detail": f"Image OCR failed: {str(e)[:200]}"})
     else:
-        raise HTTPException(status_code=400, detail="סוג קובץ לא נתמך. אנא העלה PDF או תמונה")
-    
-    if not extracted_text or not extracted_text.strip():
-        raise HTTPException(status_code=400, detail="לא הצלחתי לחלץ טקסט מהקובץ")
-    
-    # Get AI analysis
-    analysis = explain_payslip_with_knowledge(extracted_text, client)
-    
-    # Save to database (using simple session ID)
-    user_id = "web_user"  # Simple user ID for web interface
-    payslip_id = save_payslip_analysis(user_id, file.filename, file_hash, extracted_text, analysis)
-    
+        return JSONResponse(
+            status_code=400,
+            content={"detail": f"Unsupported content-type '{ct}'. Please upload PDF or image."},
+        )
+
+    if not (text and text.strip()):
+        if valid_pdf and not TESSERACT_AVAILABLE:
+            return JSONResponse(
+                status_code=400,
+                content={"detail": "Couldn't extract text. The PDF looks scanned and server OCR is disabled. Enable tesseract or upload a text PDF."},
+            )
+        return JSONResponse(status_code=400, content={"detail": "Couldn't extract any text from the file."})
+
+    file_hash = calculate_file_hash(data)
+    analysis = explain_payslip_with_knowledge(text, client)
+    user_id = "web_user"
+    payslip_id = save_payslip_analysis(user_id, file.filename, file_hash, text, analysis)
+
     return {
         "success": True,
-        "extracted_text": extracted_text,
+        "extracted_text": text,
         "analysis": analysis,
-        "payslip_id": payslip_id
+        "payslip_id": payslip_id,
+    }
+
+
+@app.post("/debug/echo")
+async def debug_echo(request: Request):
+    file, meta = await get_uploaded_file(request)
+    headers = dict(request.headers)
+    return {
+        "have_file": bool(file),
+        "filename": getattr(file, "filename", None) if file else None,
+        "content_type": getattr(file, "content_type", None) if file else None,
+        "meta": meta,
+        "headers_subset": {k: headers.get(k) for k in ["content-type", "user-agent", "content-length"]},
     }
 
 @app.post("/compare-payslips")
