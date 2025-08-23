@@ -1,10 +1,8 @@
 services:
   - type: web
     name: payslipwexplainer
-    runtime: python
-    buildCommand: pip install -r requirements.txt
-    startCommand: uvicorn backend:app --host 0.0.0.0 --port $PORT
-    healthCheckPath: /healthz
+    runtime: docker
     envVars:
       - key: OPENAI_API_KEY
         sync: false
+    healthCheckPath: /healthz

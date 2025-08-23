@@ -19,17 +19,8 @@ try:
 
     def _detect_tess():
         path = shutil.which("tesseract")
-        ver = None
-        langs = []
-        if path:
-            try:
-                ver = str(pytesseract.get_tesseract_version())
-            except Exception:
-                pass
-            try:
-                langs = pytesseract.get_languages(config="")
-            except Exception:
-                pass
+        ver = str(pytesseract.get_tesseract_version()) if path else None
+        langs = pytesseract.get_languages(config="") if path else []
         return path, ver, langs
 
     TESSERACT_PATH, TESSERACT_VERSION, TESSERACT_LANGS = _detect_tess()
