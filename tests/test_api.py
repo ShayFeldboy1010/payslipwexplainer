@@ -1,32 +1,18 @@
-import json
 import os
 import sys
-import threading
-import time
-import urllib.request
 
-sys.path.append(os.path.join(os.path.dirname(__file__), "..", "src"))
+sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 
-from api import run
+from fastapi.testclient import TestClient
+from src.api.main import app
 
-def start_server():
-    thread = threading.Thread(target=run, kwargs={"port": 8001}, daemon=True)
-    thread.start()
-    time.sleep(0.2)
+client = TestClient(app)
 
-def test_upload_and_ask():
-    start_server()
+def test_upload_and_ask() -> None:
     data = open("tests/data/sample_payslip.txt", "rb").read()
-    req = urllib.request.Request("http://localhost:8001/api/upload", data=data, method="POST")
-    with urllib.request.urlopen(req) as resp:
-        slip_id = json.load(resp)["slip_id"]
-    payload = json.dumps({"slip_id": slip_id, "question": "Gross?"}).encode()
-    req = urllib.request.Request(
-        "http://localhost:8001/api/ask",
-        data=payload,
-        method="POST",
-        headers={"Content-Type": "application/json"},
+    resp = client.post("/api/upload", files={"file": ("sample_payslip.txt", data)})
+    slip_id = resp.json()["slip_id"]
+    resp = client.post(
+        "/api/ask", json={"slip_id": slip_id, "question": "Gross?"}
     )
-    with urllib.request.urlopen(req) as resp:
-        answer = json.load(resp)
-    assert answer["answer"] == "10000"
+    assert resp.json()["answer"] == "10000"

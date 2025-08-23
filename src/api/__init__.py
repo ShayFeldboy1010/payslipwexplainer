@@ -1,3 +1,4 @@
-"""HTTP server exposing minimal API."""
-from .server import run
-__all__ = ["run"]
+"""FastAPI application exposing the payslip API."""
+from .main import app
+
+__all__ = ["app"]
