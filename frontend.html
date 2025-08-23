@@ -200,15 +200,20 @@
     </div>
 
     <script>
+      // Use same-origin in production (Render). Only remap ports when running locally.
+      const origin = window.location.origin;
+      const isLocal = origin.includes('localhost') || origin.includes('127.0.0.1');
+
+      // If local dev on 5000 (e.g., a static server), talk to backend on 8000; otherwise same-origin.
+      const API_BASE = isLocal && origin.includes(':5000')
+        ? origin.replace(':5000', ':8000')
+        : origin; // On Render, stays the same domain with no manual port.
+    </script>
+
+    <script>
         // Initialize Lucide icons
         lucide.createIcons();
-        
-        // API Base URL - Auto-detect environment
-        const currentOrigin = window.location.origin;
-        const API_BASE = currentOrigin.includes('5000') ? currentOrigin.replace('5000', '8000') : 
-                         currentOrigin.includes('8000') ? currentOrigin : 
-                         currentOrigin + ':8000';
-        
+
         // File upload functionality
         const fileDropArea = document.getElementById('file-drop-area');
         const fileInput = document.getElementById('file-input');
@@ -329,7 +334,7 @@
                 } catch (error) {
                     console.error('Network error:', error);
                     removeLastBotMessage();
-                    addBotMessage("שגיאה בתקשורת עם השרת. בודק שהשרת פועל על פורט 8000.");
+                    addBotMessage("שגיאה בתקשורת עם השרת. נסה שוב בעוד רגע.");
                 }
             }
         }

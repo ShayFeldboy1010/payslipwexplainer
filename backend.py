@@ -1,7 +1,6 @@
 from fastapi import FastAPI, File, UploadFile, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
-from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 import fitz  # PyMuPDF
 from PIL import Image
@@ -19,14 +18,17 @@ try:
 except Exception:
     TESSERACT_AVAILABLE = False
 
-app = FastAPI(title="Hebrew Payslip Analyzer API")
+if not os.getenv("OPENAI_API_KEY"):
+    # Do not raise immediately on import if you prefer; you can check inside the handler instead.
+    pass
 
-# Add CORS middleware
+app = FastAPI()
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
     allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_methods=["*"],
     allow_headers=["*"],
 )
 
@@ -34,6 +36,12 @@ app.add_middleware(
 @app.get("/healthz")
 async def healthz():
     return {"status": "ok"}
+
+
+@app.get("/", response_class=HTMLResponse)
+async def read_frontend():
+    with open("frontend.html", "r", encoding="utf-8") as f:
+        return HTMLResponse(content=f.read())
 
 # Knowledge base content
 KNOWLEDGE_BASE = """
@@ -378,13 +386,6 @@ class QuestionRequest(BaseModel):
 # Initialize database on startup
 init_database()
 client = setup_api()
-
-# Routes
-@app.get("/", response_class=HTMLResponse)
-async def read_frontend():
-    """Serve the frontend HTML"""
-    with open("frontend.html", "r", encoding="utf-8") as f:
-        return HTMLResponse(content=f.read())
 
 @app.post("/analyze-payslip")
 async def analyze_payslip(file: UploadFile = File(...)):

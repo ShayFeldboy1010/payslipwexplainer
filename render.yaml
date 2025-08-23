@@ -1,12 +1,10 @@
 services:
   - type: web
     name: payslipwexplainer
-    env: python
-    plan: free
+    runtime: python
     buildCommand: pip install -r requirements.txt
     startCommand: uvicorn backend:app --host 0.0.0.0 --port $PORT
     healthCheckPath: /healthz
-    autoDeploy: true
     envVars:
       - key: OPENAI_API_KEY
         sync: false
