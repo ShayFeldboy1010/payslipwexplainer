@@ -39,3 +39,8 @@ Run the unit tests with:
 ```bash
 pytest
 ```
+
+### OCR on Render
+This app uses Tesseract via `pytesseract` for scanned PDFs/images.
+Render installs it from `apt.txt` (tesseract-ocr, -eng, -heb).  
+If OCR is missing, scanned files will fail with 400 and a clear message.
