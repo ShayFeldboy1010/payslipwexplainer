@@ -26,7 +26,7 @@ src/
    ```
 2. Run the API server:
    ```bash
-   python -m api.server
+   uvicorn src.api.main:app --host 0.0.0.0 --port 8000
    ```
 3. Upload a payslip (here we just send plain text for demonstration):
    ```bash
@@ -54,7 +54,8 @@ Deploy the API as a web service on Render using the provided `render.yaml` file.
 2. Create a new **Web Service** on [Render](https://render.com/) and connect it to the repo.
    Render will pick up `render.yaml` automatically. If configuring manually, use:
    - Build Command: `pip install -r requirements.txt`
-   - Start Command: `PYTHONPATH=src python -m api.server`
+   - Start Command: `uvicorn src.api.main:app --host 0.0.0.0 --port $PORT`
+   - Health Check Path: `/healthz`
 3. Add the `OPENAI_API_KEY` environment variable in the Render dashboard.
 4. Deploy the service to receive a public URL for the API.
 

@@ -7,4 +7,4 @@ pymupdf>=1.26.3
 pytesseract>=0.3.13
 python-multipart>=0.0.20
 streamlit>=1.47.0
-uvicorn>=0.35.0
+uvicorn[standard]>=0.35.0
