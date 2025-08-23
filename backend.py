@@ -10,11 +10,12 @@ import os
 import sqlite3
 import datetime
 import hashlib
+import shutil
 from typing import Optional, List
 
 try:
     import pytesseract
-    TESSERACT_AVAILABLE = True
+    TESSERACT_AVAILABLE = shutil.which("tesseract") is not None
 except Exception:
     TESSERACT_AVAILABLE = False
 
@@ -201,33 +202,43 @@ def extract_text_from_pdf(pdf_content):
     try:
         doc = fitz.open(stream=pdf_content, filetype="pdf")
         all_text = ""
-        
+
         for page_num in range(len(doc)):
             page = doc[page_num]
             # First try to extract text directly
             direct_text = page.get_text()
-            
+
             if direct_text.strip():
                 all_text += direct_text + "\n"
             else:
                 if not TESSERACT_AVAILABLE:
-                    raise HTTPException(status_code=500, detail="OCR is unavailable on this server")
-                # If no direct text, use OCR
-                pix = page.get_pixmap()
-                img_bytes = pix.tobytes("png")
-                img = Image.open(io.BytesIO(img_bytes))
-                page_text = pytesseract.image_to_string(img, lang="heb+eng")
-                all_text += page_text + "\n"
-        
+                    # Skip OCR on this page; continue to next
+                    continue
+                try:
+                    pix = page.get_pixmap()
+                    img_bytes = pix.tobytes("png")
+                    img = Image.open(io.BytesIO(img_bytes))
+                    page_text = pytesseract.image_to_string(img, lang="heb+eng")
+                    all_text += page_text + "\n"
+                except Exception as ocr_err:
+                    # Don’t abort; just log/skip this page
+                    all_text += "\n"
+
         doc.close()
-        return all_text.strip()
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"שגיאה בעיבוד קובץ PDF: {str(e)}")
+
+    if not all_text.strip():
+        if not TESSERACT_AVAILABLE:
+            raise HTTPException(status_code=400, detail="לא הצלחתי לחלץ טקסט. ייתכן שהקובץ סרוק ואין OCR בשרת. התקן Tesseract או העלה PDF עם טקסט חי.")
+        raise HTTPException(status_code=400, detail="לא הצלחתי לחלץ טקסט מהקובץ.")
+
+    return all_text.strip()
 
 def extract_text_from_image(image_content):
     """Extract text from image using OCR"""
     if not TESSERACT_AVAILABLE:
-        raise HTTPException(status_code=500, detail="OCR is unavailable on this server")
+        raise HTTPException(status_code=400, detail="OCR לא זמין בשרת. התקן Tesseract כדי לעבד תמונות.")
     try:
         image = Image.open(io.BytesIO(image_content))
         # Convert to RGB if needed
@@ -236,8 +247,8 @@ def extract_text_from_image(image_content):
 
         text = pytesseract.image_to_string(image, lang="heb+eng")
         return text.strip()
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=f"שגיאה בעיבוד קובץ תמונה: {str(e)}")
+    except Exception:
+        raise HTTPException(status_code=400, detail="שגיאה ב-OCR של התמונה.")
 
 def explain_payslip_with_knowledge(text, client):
     """Get AI explanation of the payslip with knowledge base context"""
