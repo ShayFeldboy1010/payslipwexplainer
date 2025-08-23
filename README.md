@@ -12,18 +12,15 @@ pip install -r requirements.txt
 # Optional (for OCR on macOS, e.g. with Homebrew):
 # brew install tesseract
 
-export OPENAI_API_KEY=your_key_here
+export OPENAI_API_KEY=your_key_here  # if needed by your handlers
 uvicorn backend:app --reload --port 8000
 ```
 
-Test:
+In another terminal:
 
 ```bash
-curl -s http://127.0.0.1:8000/healthz
-# Expected: {"status":"ok"}
-
+curl -s http://127.0.0.1:8000/healthz  # -> {"status":"ok"}
 open http://127.0.0.1:8000/
-# Opens frontend.html
 ```
 
 ## Render deploy checklist
