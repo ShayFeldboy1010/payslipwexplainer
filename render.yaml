@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: payslipwexplainer
+    env: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: PYTHONPATH=src python -m api.server
+    envVars:
+      - key: OPENAI_API_KEY
+        sync: false

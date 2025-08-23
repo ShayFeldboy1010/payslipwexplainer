@@ -21,8 +21,8 @@ src/
 
 1. Copy the environment template and add your Groq key if available:
    ```bash
-   cp .env.example .env
-   export GROQ_API_KEY=<key>
+   cp .env.template .env
+   export OPENAI_API_KEY=<key>
    ```
 2. Run the API server:
    ```bash
@@ -45,6 +45,18 @@ Run the unit tests with:
 ```bash
 pytest
 ```
+
+## Deployment to Render
+
+Deploy the API as a web service on Render using the provided `render.yaml` file.
+
+1. Push this repository to GitHub.
+2. Create a new **Web Service** on [Render](https://render.com/) and connect it to the repo.
+   Render will pick up `render.yaml` automatically. If configuring manually, use:
+   - Build Command: `pip install -r requirements.txt`
+   - Start Command: `PYTHONPATH=src python -m api.server`
+3. Add the `OPENAI_API_KEY` environment variable in the Render dashboard.
+4. Deploy the service to receive a public URL for the API.
 
 ## Validation checklist
 
