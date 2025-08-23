@@ -1,10 +1,7 @@
-import logging
-import os
-import io
-import shutil
-from fastapi import FastAPI, HTTPException, UploadFile, File
+import io, os, shutil, logging
+from fastapi import FastAPI, HTTPException, UploadFile, File, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, JSONResponse
 from typing import Optional, List
 from pydantic import BaseModel
 import fitz  # PyMuPDF
@@ -19,9 +16,35 @@ log = logging.getLogger("payslip")
 
 try:
     import pytesseract
-    TESSERACT_AVAILABLE = shutil.which("tesseract") is not None
+
+    def _detect_tess():
+        path = shutil.which("tesseract")
+        ver = None
+        langs = []
+        if path:
+            try:
+                ver = str(pytesseract.get_tesseract_version())
+            except Exception:
+                pass
+            try:
+                langs = pytesseract.get_languages(config="")
+            except Exception:
+                pass
+        return path, ver, langs
+
+    TESSERACT_PATH, TESSERACT_VERSION, TESSERACT_LANGS = _detect_tess()
 except Exception:
-    TESSERACT_AVAILABLE = False
+    pytesseract = None
+    TESSERACT_PATH, TESSERACT_VERSION, TESSERACT_LANGS = None, None, []
+
+TESSERACT_AVAILABLE = TESSERACT_PATH is not None
+log.info(
+    "Tesseract available=%s path=%s ver=%s langs_count=%d",
+    TESSERACT_AVAILABLE,
+    TESSERACT_PATH,
+    TESSERACT_VERSION,
+    len(TESSERACT_LANGS),
+)
 
 if not os.getenv("OPENAI_API_KEY"):
     # Do not raise immediately on import if you prefer; you can check inside the handler instead.
@@ -40,7 +63,24 @@ app.add_middleware(
 
 @app.get("/healthz")
 async def healthz():
-    return {"status": "ok"}
+    return {
+        "status": "ok",
+        "ocr": {
+            "available": TESSERACT_AVAILABLE,
+            "version": TESSERACT_VERSION,
+            "langs_count": len(TESSERACT_LANGS),
+        },
+    }
+
+
+@app.get("/debug/ocr")
+async def debug_ocr():
+    return {
+        "available": TESSERACT_AVAILABLE,
+        "path": TESSERACT_PATH,
+        "version": TESSERACT_VERSION,
+        "langs": TESSERACT_LANGS[:50],
+    }
 
 
 @app.get("/", response_class=HTMLResponse)
@@ -215,14 +255,20 @@ def extract_text_from_pdf(pdf_content):
             if direct_text.strip():
                 all_text += direct_text + "\n"
             else:
-                if not TESSERACT_AVAILABLE:
-                    # Skip OCR on this page; continue to next
-                    continue
                 try:
                     pix = page.get_pixmap()
                     img_bytes = pix.tobytes("png")
                     img = Image.open(io.BytesIO(img_bytes))
-                    page_text = pytesseract.image_to_string(img, lang="heb+eng")
+                    if TESSERACT_AVAILABLE:
+                        try:
+                            page_text = pytesseract.image_to_string(img, lang="heb+eng")
+                        except Exception:
+                            page_text = pytesseract.image_to_string(img)
+                    else:
+                        raise HTTPException(
+                            status_code=400,
+                            detail="OCR is not available on server (missing tesseract)",
+                        )
                     all_text += page_text + "\n"
                 except Exception as ocr_err:
                     # Don’t abort; just log/skip this page
@@ -242,14 +288,20 @@ def extract_text_from_pdf(pdf_content):
 def extract_text_from_image(image_content):
     """Extract text from image using OCR"""
     if not TESSERACT_AVAILABLE:
-        raise HTTPException(status_code=400, detail="OCR לא זמין בשרת. התקן Tesseract כדי לעבד תמונות.")
+        raise HTTPException(
+            status_code=400,
+            detail="OCR is not available on server (missing tesseract)",
+        )
     try:
         image = Image.open(io.BytesIO(image_content))
         # Convert to RGB if needed
         if image.mode != 'RGB':
             image = image.convert('RGB')
 
-        text = pytesseract.image_to_string(image, lang="heb+eng")
+        try:
+            text = pytesseract.image_to_string(image, lang="heb+eng")
+        except Exception:
+            text = pytesseract.image_to_string(image)
         return text.strip()
     except Exception:
         raise HTTPException(status_code=400, detail="שגיאה ב-OCR של התמונה.")
