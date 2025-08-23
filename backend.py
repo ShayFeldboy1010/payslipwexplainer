@@ -4,7 +4,6 @@ from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 import fitz  # PyMuPDF
-import pytesseract
 from PIL import Image
 import io
 from openai import OpenAI
@@ -13,6 +12,12 @@ import sqlite3
 import datetime
 import hashlib
 from typing import Optional, List
+
+try:
+    import pytesseract
+    TESSERACT_AVAILABLE = True
+except Exception:
+    TESSERACT_AVAILABLE = False
 
 app = FastAPI(title="Hebrew Payslip Analyzer API")
 
@@ -24,6 +29,11 @@ app.add_middleware(
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
 )
+
+
+@app.get("/healthz")
+async def healthz():
+    return {"status": "ok"}
 
 # Knowledge base content
 KNOWLEDGE_BASE = """
@@ -107,7 +117,7 @@ def setup_api():
     """Setup OpenAI client for Groq API"""
     api_key = os.getenv("OPENAI_API_KEY")
     if not api_key:
-        raise ValueError("Please set the OPENAI_API_KEY environment variable with your Groq API key")
+        raise HTTPException(status_code=500, detail="OPENAI_API_KEY is not set")
     client = OpenAI(
         api_key=api_key,
         base_url="https://api.groq.com/openai/v1"
@@ -192,6 +202,8 @@ def extract_text_from_pdf(pdf_content):
             if direct_text.strip():
                 all_text += direct_text + "\n"
             else:
+                if not TESSERACT_AVAILABLE:
+                    raise HTTPException(status_code=500, detail="OCR is unavailable on this server")
                 # If no direct text, use OCR
                 pix = page.get_pixmap()
                 img_bytes = pix.tobytes("png")
@@ -206,12 +218,14 @@ def extract_text_from_pdf(pdf_content):
 
 def extract_text_from_image(image_content):
     """Extract text from image using OCR"""
+    if not TESSERACT_AVAILABLE:
+        raise HTTPException(status_code=500, detail="OCR is unavailable on this server")
     try:
         image = Image.open(io.BytesIO(image_content))
         # Convert to RGB if needed
         if image.mode != 'RGB':
             image = image.convert('RGB')
-        
+
         text = pytesseract.image_to_string(image, lang="heb+eng")
         return text.strip()
     except Exception as e:

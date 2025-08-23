@@ -53,6 +53,9 @@ Thumbs.db
 
 # Database
 *.db-journal
+payslip_data.db
+*.sqlite
+*.db
 
 # Temporary files
 *.tmp
