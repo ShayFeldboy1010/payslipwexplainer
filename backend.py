@@ -261,39 +261,37 @@ def extract_text_from_pdf(pdf_content):
     ocr_pages_used = 0
 
     try:
-        doc = fitz.open(stream=pdf_content, filetype="pdf")
+        with fitz.open(stream=pdf_content, filetype="pdf") as doc:
+            page_count = doc.page_count
+            for page_idx, page in enumerate(doc):
+                if (time.perf_counter() - start) > MAX_TOTAL_SECONDS:
+                    log.warning("OCR timeout budget hit at page %s", page_idx)
+                    break
+
+                direct = (page.get_text("text") or "").strip()
+                if direct:
+                    text_out.append(direct)
+                    continue
+
+                if ocr_pages_used >= MAX_OCR_PAGES:
+                    log.info(
+                        "OCR page budget reached (%d). Skipping OCR for remaining pages.",
+                        MAX_OCR_PAGES,
+                    )
+                    continue
+
+                try:
+                    pix = page.get_pixmap(matrix=MATRIX, alpha=False, colorspace=fitz.csGRAY)
+                    img = Image.open(io.BytesIO(pix.tobytes("png")))
+                    ocr_text = (ocr_image_fast(img) or "").strip()
+                    if ocr_text:
+                        text_out.append(ocr_text)
+                    ocr_pages_used += 1
+                except Exception as e:
+                    log.exception("OCR failed on page %s: %s", page_idx, e)
+                    continue
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"PDF open failed: {str(e)[:200]}")
-
-    for page_idx, page in enumerate(doc):
-        if (time.perf_counter() - start) > MAX_TOTAL_SECONDS:
-            log.warning("OCR timeout budget hit at page %s", page_idx)
-            break
-
-        direct = (page.get_text("text") or "").strip()
-        if direct:
-            text_out.append(direct)
-            continue
-
-        if ocr_pages_used >= MAX_OCR_PAGES:
-            log.info(
-                "OCR page budget reached (%d). Skipping OCR for remaining pages.",
-                MAX_OCR_PAGES,
-            )
-            continue
-
-        try:
-            pix = page.get_pixmap(matrix=MATRIX, alpha=False, colorspace=fitz.csGRAY)
-            img = Image.open(io.BytesIO(pix.tobytes("png")))
-            ocr_text = (ocr_image_fast(img) or "").strip()
-            if ocr_text:
-                text_out.append(ocr_text)
-            ocr_pages_used += 1
-        except Exception as e:
-            log.exception("OCR failed on page %s: %s", page_idx, e)
-            continue
-
-    doc.close()
 
     full_text = "\n\n".join(text_out).strip()
     elapsed = time.perf_counter() - start
@@ -302,7 +300,7 @@ def extract_text_from_pdf(pdf_content):
         len(full_text),
         ocr_pages_used,
         elapsed,
-        len(doc),
+        page_count,
     )
     return full_text, ocr_pages_used, elapsed
 
