@@ -54,6 +54,7 @@ Thumbs.db
 # Database
 *.db-journal
 payslip_data.db
+payslips.db
 *.sqlite
 *.db
 
