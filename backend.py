@@ -10,6 +10,7 @@ from openai import OpenAI
 import sqlite3
 import datetime
 import hashlib
+from db import init_db, save_payslip, get_payslip, latest_payslip_id, list_payslips
 
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger("payslip")
@@ -33,6 +34,7 @@ TESSERACT_AVAILABLE = TESSERACT_PATH is not None
 # OCR budgets to avoid long hangs
 MAX_OCR_PAGES = int(os.getenv("MAX_OCR_PAGES", "3"))
 MAX_TOTAL_SECONDS = int(os.getenv("MAX_TOTAL_SECONDS", "60"))
+MAX_BYTES = 8 * 1024 * 1024  # 8MB
 
 # Rasterization config for speed/accuracy tradeoff
 # ~150–180 DPI equivalent; grayscale to reduce bytes.
@@ -64,6 +66,9 @@ if not os.getenv("OPENAI_API_KEY"):
     pass
 
 app = FastAPI()
+
+# Initialize simple payslip memory database
+init_db()
 
 app.add_middleware(
     CORSMiddleware,
@@ -464,13 +469,7 @@ def answer_question_with_context(question, context, previous_analysis, client):
         raise HTTPException(status_code=500, detail=f"שגיאה בקבלת תשובה: {str(e)}")
 
 # Pydantic models
-class QuestionRequest(BaseModel):
-    question: str
-    context: Optional[str] = ""
-    previous_analysis: Optional[str] = ""
-
-# Initialize database on startup
-init_database()
+# Setup AI client for other endpoints
 client = setup_api()
 
 @app.post("/analyze-payslip")
@@ -478,6 +477,9 @@ async def analyze_payslip(file: UploadFile = File(...)):
     data = await file.read()
     if not data:
         raise HTTPException(status_code=400, detail="Uploaded file is empty")
+
+    if len(data) > MAX_BYTES:
+        raise HTTPException(status_code=400, detail="הקובץ גדול מדי (מעל 8MB). נסה קובץ קטן יותר.")
 
     log.info(
         "Analyze request: filename=%s content-type=%s size=%s",
@@ -512,12 +514,8 @@ async def analyze_payslip(file: UploadFile = File(...)):
             detail="Couldn't extract text. Try a text-based PDF or increase OCR budget.",
         )
 
-    file_hash = calculate_file_hash(data)
-    analysis = explain_payslip_with_knowledge(full_text, client)
-    user_id = "web_user"
-    payslip_id = save_payslip_analysis(
-        user_id, file.filename, file_hash, full_text, analysis
-    )
+    meta = {"filename": file.filename, "size": len(data), "content_type": file.content_type}
+    pid = save_payslip(full_text, meta)
 
     log.info(
         "Analyze done: chars=%d ocr_pages_used=%d elapsed=%.2fs",
@@ -527,11 +525,52 @@ async def analyze_payslip(file: UploadFile = File(...)):
     )
 
     return {
-        "success": True,
-        "extracted_text": full_text,
-        "analysis": analysis,
-        "payslip_id": payslip_id,
+        "ok": True,
+        "payslip_id": pid,
+        "message": "התלוש נשמר בזיכרון. עכשיו אפשר לשאול עליו שאלות.",
     }
+
+
+class AskBody(BaseModel):
+    question: str
+    payslip_id: str | None = None
+
+
+@app.post("/ask", response_class=JSONResponse)
+async def ask(body: AskBody):
+    pid = body.payslip_id or latest_payslip_id()
+    if not pid:
+        raise HTTPException(status_code=400, detail="אין תלוש שמור. העלה תלוש קודם.")
+
+    context = get_payslip(pid)
+    if not context:
+        raise HTTPException(status_code=404, detail="תלוש לא נמצא.")
+
+    try:
+        from openai import OpenAI
+        import os
+        client = OpenAI(base_url="https://api.groq.com/openai/v1", api_key=os.getenv("OPENAI_API_KEY"))
+        system = "You answer questions about an Israeli payslip. Be concise. Hebrew."
+        messages = [
+            {"role": "system", "content": system},
+            {"role": "user", "content": f"מידע תלוש:\n{context}\n\nשאלה:\n{body.question}"},
+        ]
+        resp = client.chat.completions.create(
+            model="llama-3.1-8b-instant",
+            messages=messages,
+            stream=False,
+            timeout=60,
+        )
+        answer = resp.choices[0].message.content
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"LLM error: {str(e)[:200]}")
+
+    return {"ok": True, "payslip_id": pid, "answer": answer}
+
+
+@app.get("/history", response_class=JSONResponse)
+async def history():
+    return {"ok": True, "items": list_payslips(20)}
 
 
 @app.post("/debug/echo")
@@ -597,39 +636,6 @@ async def compare_payslips(files: List[UploadFile] = File(...)):
         "comparison_analysis": comparison_analysis,
         "total_files": len(files)
     }
-
-@app.post("/ask-question")
-async def ask_question(request: QuestionRequest):
-    """Answer user question about payslip"""
-    answer = answer_question_with_context(
-        request.question, 
-        request.context, 
-        request.previous_analysis, 
-        client
-    )
-    
-    return {
-        "success": True,
-        "answer": answer
-    }
-
-@app.get("/get-history")
-async def get_history():
-    """Get user's payslip history"""
-    user_id = "web_user"  # Simple user ID for web interface
-    payslips = get_user_payslips(user_id)
-    
-    history = []
-    for payslip in payslips:
-        history.append({
-            "id": payslip[0],
-            "filename": payslip[1],
-            "created_at": payslip[2],
-            "extracted_text": payslip[3],
-            "ai_analysis": payslip[4]
-        })
-    
-    return history
 
 if __name__ == "__main__":
     import uvicorn

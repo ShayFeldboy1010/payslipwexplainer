@@ -317,18 +317,16 @@
             let data;
             try { data = await res.json(); } catch (e) { data = { detail: 'Invalid JSON response' }; }
 
+            stopTyping();
             if (!res.ok) {
                 console.error('analyze error:', data);
                 addBotMessage(data.detail || "שגיאה בעיבוד הקובץ.");
-                stopTyping();
                 return;
             }
 
-            stopTyping();
-            currentFileContent = data.extracted_text;
-            currentAnalysis = data.analysis;
-            addBotMessage("✔️ הקובץ עובד! " + JSON.stringify(data));
-            loadHistory();
+            localStorage.setItem('activePayslipId', data.payslip_id);
+            addBotMessage("✅ " + (data.message || "התלוש נשמר. אפשר לשאול שאלות."));
+            return;
         }
         
         // Chat functionality
@@ -342,36 +340,21 @@
                 addBotMessage("חושב...", true);
                 
                 // Send message to API
-                sendQuestionToAPI(message);
+                sendQuestion(message);
             }
         }
-        
-        async function sendQuestionToAPI(question) {
-            try {
-                const response = await fetch(`${API_BASE}/ask-question`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        question: question,
-                        context: currentFileContent || '',
-                        previous_analysis: currentAnalysis || ''
-                    })
-                });
-                
-                if (response.ok) {
-                    const result = await response.json();
-                    removeLastBotMessage();
-                    addBotMessage(result.answer);
-                } else {
-                    removeLastBotMessage();
-                    addBotMessage("שגיאה בקבלת תשובה. אנא נסה שוב.");
-                }
-            } catch (error) {
-                removeLastBotMessage();
-                addBotMessage("שגיאה בתקשורת עם השרת.");
-            }
+
+        async function sendQuestion(text) {
+            const pid = localStorage.getItem('activePayslipId');
+            const res = await fetch(`${API_BASE}/ask`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ question: text, payslip_id: pid })
+            });
+            const data = await res.json().catch(() => ({ detail: 'Invalid JSON' }));
+            removeLastBotMessage();
+            if (!res.ok) { addBotMessage(data.detail || "שגיאה בשאלה."); return; }
+            addBotMessage(data.answer);
         }
         
         function addUserMessage(message) {
