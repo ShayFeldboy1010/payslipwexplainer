@@ -313,20 +313,21 @@
             addBotMessage("מעלה ומנתח את הקובץ...", true);
             const fd = new FormData();
             fd.append('file', selectedPayslipFile);
-
             const res = await fetch(`${API_BASE}/analyze-payslip`, { method: 'POST', body: fd });
-            const data = await res.json();
+            let data;
+            try { data = await res.json(); } catch (e) { data = { detail: 'Invalid JSON response' }; }
+
             if (!res.ok) {
                 console.error('analyze error:', data);
-                removeLastBotMessage();
                 addBotMessage(data.detail || "שגיאה בעיבוד הקובץ.");
+                stopTyping();
                 return;
             }
 
+            stopTyping();
             currentFileContent = data.extracted_text;
             currentAnalysis = data.analysis;
-            removeLastBotMessage();
-            addBotMessage(data.analysis);
+            addBotMessage("✔️ הקובץ עובד! " + JSON.stringify(data));
             loadHistory();
         }
         
@@ -418,6 +419,14 @@
             lucide.createIcons();
         }
         
+        function stopTyping() {
+            const loading = chatContainer.querySelector('.loading-dots');
+            if (loading) {
+                const msg = loading.closest('.flex');
+                if (msg) msg.remove();
+            }
+        }
+
         function removeLastBotMessage() {
             const lastMessage = chatContainer.lastElementChild;
             if (lastMessage && lastMessage.classList.contains('flex')) {

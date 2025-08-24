@@ -1,4 +1,4 @@
-import io, os, shutil, logging
+import time, io, os, shutil, logging
 from fastapi import FastAPI, HTTPException, UploadFile, File, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, JSONResponse
@@ -29,6 +29,28 @@ except Exception:
     TESSERACT_PATH, TESSERACT_VERSION, TESSERACT_LANGS = None, None, []
 
 TESSERACT_AVAILABLE = TESSERACT_PATH is not None
+
+# OCR budgets to avoid long hangs
+MAX_OCR_PAGES = int(os.getenv("MAX_OCR_PAGES", "3"))
+MAX_TOTAL_SECONDS = int(os.getenv("MAX_TOTAL_SECONDS", "60"))
+
+# Rasterization config for speed/accuracy tradeoff
+# ~150–180 DPI equivalent; grayscale to reduce bytes.
+SCALE = 1.5  # 72dpi * 1.5 ≈ 108 dpi (fast); bump to 2.0 if needed
+MATRIX = fitz.Matrix(SCALE, SCALE)
+USE_LANG = "heb+eng"  # will auto-fallback below
+
+
+def ocr_image_fast(pil_img):
+    """Run tesseract OCR with language fallback."""
+    if not TESSERACT_AVAILABLE:
+        raise HTTPException(status_code=400, detail="OCR is not available on server")
+    lang = USE_LANG if "heb" in TESSERACT_LANGS else "eng"
+    try:
+        return pytesseract.image_to_string(pil_img.convert("L"), lang=lang)
+    except Exception:
+        # last resort: let tesseract auto-detect
+        return pytesseract.image_to_string(pil_img.convert("L"))
 log.info(
     "Tesseract available=%s path=%s ver=%s langs_count=%d",
     TESSERACT_AVAILABLE,
@@ -70,7 +92,7 @@ async def debug_ocr():
         "available": TESSERACT_AVAILABLE,
         "path": TESSERACT_PATH,
         "version": TESSERACT_VERSION,
-        "langs": TESSERACT_LANGS[:50],
+        "langs": TESSERACT_LANGS,
     }
 
 
@@ -233,48 +255,56 @@ def calculate_file_hash(file_content):
     return hashlib.md5(file_content).hexdigest()
 
 def extract_text_from_pdf(pdf_content):
-    """Extract text from PDF using PyMuPDF and OCR"""
+    """Extract text from PDF with time/page budgets and OCR fallback."""
+    start = time.perf_counter()
+    text_out = []
+    ocr_pages_used = 0
+
     try:
         doc = fitz.open(stream=pdf_content, filetype="pdf")
-        all_text = ""
-
-        for page_num in range(len(doc)):
-            page = doc[page_num]
-            # First try to extract text directly
-            direct_text = page.get_text()
-
-            if direct_text.strip():
-                all_text += direct_text + "\n"
-            else:
-                try:
-                    pix = page.get_pixmap()
-                    img_bytes = pix.tobytes("png")
-                    img = Image.open(io.BytesIO(img_bytes))
-                    if TESSERACT_AVAILABLE:
-                        try:
-                            page_text = pytesseract.image_to_string(img, lang="heb+eng")
-                        except Exception:
-                            page_text = pytesseract.image_to_string(img)
-                    else:
-                        raise HTTPException(
-                            status_code=400,
-                            detail="OCR is not available on server (missing tesseract)",
-                        )
-                    all_text += page_text + "\n"
-                except Exception as ocr_err:
-                    # Don’t abort; just log/skip this page
-                    all_text += "\n"
-
-        doc.close()
     except Exception as e:
-        raise HTTPException(status_code=400, detail=f"שגיאה בעיבוד קובץ PDF: {str(e)}")
+        raise HTTPException(status_code=400, detail=f"PDF open failed: {str(e)[:200]}")
 
-    if not all_text.strip():
-        if not TESSERACT_AVAILABLE:
-            raise HTTPException(status_code=400, detail="לא הצלחתי לחלץ טקסט. ייתכן שהקובץ סרוק ואין OCR בשרת. התקן Tesseract או העלה PDF עם טקסט חי.")
-        raise HTTPException(status_code=400, detail="לא הצלחתי לחלץ טקסט מהקובץ.")
+    for page_idx, page in enumerate(doc):
+        if (time.perf_counter() - start) > MAX_TOTAL_SECONDS:
+            log.warning("OCR timeout budget hit at page %s", page_idx)
+            break
 
-    return all_text.strip()
+        direct = (page.get_text("text") or "").strip()
+        if direct:
+            text_out.append(direct)
+            continue
+
+        if ocr_pages_used >= MAX_OCR_PAGES:
+            log.info(
+                "OCR page budget reached (%d). Skipping OCR for remaining pages.",
+                MAX_OCR_PAGES,
+            )
+            continue
+
+        try:
+            pix = page.get_pixmap(matrix=MATRIX, alpha=False, colorspace=fitz.csGRAY)
+            img = Image.open(io.BytesIO(pix.tobytes("png")))
+            ocr_text = (ocr_image_fast(img) or "").strip()
+            if ocr_text:
+                text_out.append(ocr_text)
+            ocr_pages_used += 1
+        except Exception as e:
+            log.exception("OCR failed on page %s: %s", page_idx, e)
+            continue
+
+    doc.close()
+
+    full_text = "\n\n".join(text_out).strip()
+    elapsed = time.perf_counter() - start
+    log.info(
+        "Extracted %d chars using %d OCR pages in %.2fs (pages=%d)",
+        len(full_text),
+        ocr_pages_used,
+        elapsed,
+        len(doc),
+    )
+    return full_text, ocr_pages_used, elapsed
 
 def extract_text_from_image(image_content):
     """Extract text from image using OCR"""
@@ -451,22 +481,56 @@ async def analyze_payslip(file: UploadFile = File(...)):
     if not data:
         raise HTTPException(status_code=400, detail="Uploaded file is empty")
 
+    log.info(
+        "Analyze request: filename=%s content-type=%s size=%s",
+        file.filename,
+        file.content_type,
+        len(data),
+    )
+
     ct = (file.content_type or "").lower()
-    if ct in ["application/pdf", "application/x-pdf"] or file.filename.lower().endswith(".pdf"):
-        text = extract_text_from_pdf(data)
+    is_pdf = ct in [
+        "application/pdf",
+        "application/x-pdf",
+        "application/octet-stream",
+    ] or file.filename.lower().endswith(".pdf")
+
+    if is_pdf:
+        full_text, ocr_pages_used, elapsed = extract_text_from_pdf(data)
     elif ct.startswith("image/"):
-        text = extract_text_from_image(data)
+        start = time.perf_counter()
+        full_text = extract_text_from_image(data)
+        elapsed = time.perf_counter() - start
+        ocr_pages_used = 1 if full_text else 0
     else:
-        raise HTTPException(status_code=400, detail=f"Unsupported type '{ct}'. Upload PDF or image.")
+        raise HTTPException(
+            status_code=400,
+            detail=f"Unsupported type '{ct}'. Upload PDF or image.",
+        )
+
+    if not full_text:
+        raise HTTPException(
+            status_code=400,
+            detail="Couldn't extract text. Try a text-based PDF or increase OCR budget.",
+        )
 
     file_hash = calculate_file_hash(data)
-    analysis = explain_payslip_with_knowledge(text, client)
+    analysis = explain_payslip_with_knowledge(full_text, client)
     user_id = "web_user"
-    payslip_id = save_payslip_analysis(user_id, file.filename, file_hash, text, analysis)
+    payslip_id = save_payslip_analysis(
+        user_id, file.filename, file_hash, full_text, analysis
+    )
+
+    log.info(
+        "Analyze done: chars=%d ocr_pages_used=%d elapsed=%.2fs",
+        len(full_text),
+        ocr_pages_used,
+        elapsed,
+    )
 
     return {
         "success": True,
-        "extracted_text": text,
+        "extracted_text": full_text,
         "analysis": analysis,
         "payslip_id": payslip_id,
     }
@@ -497,9 +561,16 @@ async def compare_payslips(files: List[UploadFile] = File(...)):
         file_content = await file.read()
         
         # Extract text based on file type
-        if file.content_type == "application/pdf":
-            extracted_text = extract_text_from_pdf(file_content)
-        elif file.content_type.startswith("image/"):
+        ct = (file.content_type or "").lower()
+        is_pdf = ct in [
+            "application/pdf",
+            "application/x-pdf",
+            "application/octet-stream",
+        ] or file.filename.lower().endswith(".pdf")
+
+        if is_pdf:
+            extracted_text, _, _ = extract_text_from_pdf(file_content)
+        elif ct.startswith("image/"):
             extracted_text = extract_text_from_image(file_content)
         else:
             raise HTTPException(status_code=400, detail=f"קובץ {file.filename}: סוג קובץ לא נתמך")
