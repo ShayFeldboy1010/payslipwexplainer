@@ -32,6 +32,15 @@ open http://127.0.0.1:8000/
 - Env var: add `OPENAI_API_KEY` (sync: off, paste your key)
 - OCR support: include `apt.txt` with `tesseract-ocr`
 
+### Performance budgets
+
+The backend limits how much OCR work is done per request to keep slow PDFs from
+blocking the service. You can tweak these via environment variables:
+
+- `MAX_PAGES` – maximum pages to scan from a PDF (default `50`)
+- `MAX_OCR_PAGES` – maximum pages to OCR when no text is found (default `3`)
+- `MAX_TOTAL_SECONDS` – overall time budget for extraction (default `60` seconds)
+
 ## Testing
 
 Run the unit tests with:

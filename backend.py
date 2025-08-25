@@ -1,4 +1,5 @@
 import time, io, os, shutil, logging
+from concurrent.futures import ThreadPoolExecutor
 from fastapi import FastAPI, HTTPException, UploadFile, File, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, JSONResponse
@@ -34,6 +35,7 @@ TESSERACT_AVAILABLE = TESSERACT_PATH is not None
 # OCR budgets to avoid long hangs
 MAX_OCR_PAGES = int(os.getenv("MAX_OCR_PAGES", "3"))
 MAX_TOTAL_SECONDS = int(os.getenv("MAX_TOTAL_SECONDS", "60"))
+MAX_PAGES = int(os.getenv("MAX_PAGES", "50"))
 MAX_BYTES = 8 * 1024 * 1024  # 8MB
 
 # Rasterization config for speed/accuracy tradeoff
@@ -262,8 +264,8 @@ def calculate_file_hash(file_content):
 def extract_text_from_pdf(pdf_content):
     """Extract text from PDF with time/page budgets and OCR fallback."""
     start = time.perf_counter()
-    text_out = []
-    ocr_pages_used = 0
+    page_texts = {}
+    ocr_jobs: List[tuple[int, Image.Image]] = []
 
     try:
         with fitz.open(stream=pdf_content, filetype="pdf") as doc:
@@ -273,12 +275,16 @@ def extract_text_from_pdf(pdf_content):
                     log.warning("OCR timeout budget hit at page %s", page_idx)
                     break
 
+                if page_idx >= MAX_PAGES:
+                    log.info("Page limit reached (%d). Stopping scan.", MAX_PAGES)
+                    break
+
                 direct = (page.get_text("text") or "").strip()
                 if direct:
-                    text_out.append(direct)
+                    page_texts[page_idx] = direct
                     continue
 
-                if ocr_pages_used >= MAX_OCR_PAGES:
+                if len(ocr_jobs) >= MAX_OCR_PAGES:
                     log.info(
                         "OCR page budget reached (%d). Skipping OCR for remaining pages.",
                         MAX_OCR_PAGES,
@@ -288,17 +294,22 @@ def extract_text_from_pdf(pdf_content):
                 try:
                     pix = page.get_pixmap(matrix=MATRIX, alpha=False, colorspace=fitz.csGRAY)
                     img = Image.open(io.BytesIO(pix.tobytes("png")))
-                    ocr_text = (ocr_image_fast(img) or "").strip()
-                    if ocr_text:
-                        text_out.append(ocr_text)
-                    ocr_pages_used += 1
+                    ocr_jobs.append((page_idx, img))
                 except Exception as e:
-                    log.exception("OCR failed on page %s: %s", page_idx, e)
+                    log.exception("OCR prep failed on page %s: %s", page_idx, e)
                     continue
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"PDF open failed: {str(e)[:200]}")
 
-    full_text = "\n\n".join(text_out).strip()
+    if ocr_jobs:
+        with ThreadPoolExecutor(max_workers=len(ocr_jobs)) as ex:
+            results = list(ex.map(lambda job: ocr_image_fast(job[1]), ocr_jobs))
+        for (idx, _), res in zip(ocr_jobs, results):
+            if res:
+                page_texts[idx] = res.strip()
+
+    ocr_pages_used = len(ocr_jobs)
+    full_text = "\n\n".join(page_texts[i] for i in sorted(page_texts))
     elapsed = time.perf_counter() - start
     log.info(
         "Extracted %d chars using %d OCR pages in %.2fs (pages=%d)",
