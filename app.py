@@ -3,6 +3,7 @@ import fitz  # PyMuPDF
 import pytesseract
 from PIL import Image
 import io
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from openai import OpenAI
 import os
 import base64
@@ -123,29 +124,45 @@ def setup_api():
     )
     return client
 
-def extract_text_from_pdf(pdf_file):
-    """Extract text from PDF using PyMuPDF and OCR"""
+OCR_SCALE = 2.0
+OCR_WORKERS = 4
+OCR_CONFIG = "--oem 3 --psm 6"
+
+
+def _ocr_page(image_bytes: bytes) -> str:
+    """Run OCR on a PNG byte stream."""
     try:
-        doc = fitz.open(stream=pdf_file.read(), filetype="pdf")
-        all_text = ""
-        
-        for page_num in range(len(doc)):
-            page = doc[page_num]
-            # First try to extract text directly
-            direct_text = page.get_text()
-            
-            if direct_text.strip():
-                all_text += direct_text + "\n"
-            else:
-                # If no direct text, use OCR
-                pix = page.get_pixmap()
-                img_bytes = pix.tobytes("png")
-                img = Image.open(io.BytesIO(img_bytes))
-                page_text = pytesseract.image_to_string(img, lang="heb+eng")
-                all_text += page_text + "\n"
-        
-        doc.close()
-        return all_text.strip()
+        img = Image.open(io.BytesIO(image_bytes))
+        return pytesseract.image_to_string(img, lang="heb+eng", config=OCR_CONFIG)
+    except Exception:
+        return ""
+
+
+def extract_text_from_pdf(pdf_file):
+    """Efficiently extract text from a PDF, using OCR only when required."""
+    try:
+        pdf_bytes = pdf_file.read()
+        page_texts = []
+        ocr_jobs = {}
+
+        with fitz.open(stream=pdf_bytes, filetype="pdf") as doc:
+            for index, page in enumerate(doc):
+                text = (page.get_text("text") or "").strip()
+                if text:
+                    page_texts.append(text)
+                    continue
+
+                pix = page.get_pixmap(matrix=fitz.Matrix(OCR_SCALE, OCR_SCALE), alpha=False)
+                ocr_jobs[index] = pix.tobytes("png")
+                page_texts.append("")
+
+        if ocr_jobs:
+            with ThreadPoolExecutor(max_workers=min(len(ocr_jobs), OCR_WORKERS)) as ex:
+                futures = {ex.submit(_ocr_page, b): i for i, b in ocr_jobs.items()}
+                for fut in as_completed(futures):
+                    page_texts[futures[fut]] = fut.result().strip()
+
+        return "\n\n".join(t for t in page_texts if t).strip()
     except Exception as e:
         st.error(f"שגיאה בעיבוד קובץ PDF: {str(e)}")
         return None
