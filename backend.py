@@ -10,6 +10,7 @@ from openai import OpenAI
 import sqlite3
 import datetime
 import hashlib
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from db import init_db, save_payslip, get_payslip, latest_payslip_id, list_payslips
 
 logging.basicConfig(level=logging.INFO)
@@ -36,11 +37,12 @@ MAX_OCR_PAGES = int(os.getenv("MAX_OCR_PAGES", "3"))
 MAX_TOTAL_SECONDS = int(os.getenv("MAX_TOTAL_SECONDS", "60"))
 MAX_BYTES = 8 * 1024 * 1024  # 8MB
 
-# Rasterization config for speed/accuracy tradeoff
-# ~150–180 DPI equivalent; grayscale to reduce bytes.
-SCALE = 1.5  # 72dpi * 1.5 ≈ 108 dpi (fast); bump to 2.0 if needed
+# Rasterization/OCR tuning
+SCALE = float(os.getenv("OCR_SCALE", "2.0"))  # higher for better accuracy
 MATRIX = fitz.Matrix(SCALE, SCALE)
 USE_LANG = "heb+eng"  # will auto-fallback below
+OCR_CONFIG = "--oem 3 --psm 6"  # balance speed and accuracy
+MAX_OCR_WORKERS = int(os.getenv("MAX_OCR_WORKERS", "4"))
 
 
 def ocr_image_fast(pil_img):
@@ -49,10 +51,12 @@ def ocr_image_fast(pil_img):
         raise HTTPException(status_code=400, detail="OCR is not available on server")
     lang = USE_LANG if "heb" in TESSERACT_LANGS else "eng"
     try:
-        return pytesseract.image_to_string(pil_img.convert("L"), lang=lang)
+        return pytesseract.image_to_string(
+            pil_img.convert("L"), lang=lang, config=OCR_CONFIG
+        )
     except Exception:
         # last resort: let tesseract auto-detect
-        return pytesseract.image_to_string(pil_img.convert("L"))
+        return pytesseract.image_to_string(pil_img.convert("L"), config=OCR_CONFIG)
 log.info(
     "Tesseract available=%s path=%s ver=%s langs_count=%d",
     TESSERACT_AVAILABLE,
@@ -259,55 +263,64 @@ def calculate_file_hash(file_content):
     """Calculate hash of file content"""
     return hashlib.md5(file_content).hexdigest()
 
-def extract_text_from_pdf(pdf_content):
-    """Extract text from PDF with time/page budgets and OCR fallback."""
-    start = time.perf_counter()
-    text_out = []
-    ocr_pages_used = 0
+def _ocr_bytes(img_bytes: bytes) -> str:
+    img = Image.open(io.BytesIO(img_bytes))
+    return (ocr_image_fast(img) or "").strip()
 
+
+def extract_text_from_pdf(pdf_content):
+    """Extract text from PDF with time/page budgets and parallel OCR fallback."""
+    start = time.perf_counter()
+    ocr_pages_used = 0
+    page_texts: List[str] = []
     try:
         with fitz.open(stream=pdf_content, filetype="pdf") as doc:
             page_count = doc.page_count
-            for page_idx, page in enumerate(doc):
+            images_for_ocr = {}
+            for idx, page in enumerate(doc):
                 if (time.perf_counter() - start) > MAX_TOTAL_SECONDS:
-                    log.warning("OCR timeout budget hit at page %s", page_idx)
+                    log.warning("OCR timeout budget hit at page %s", idx)
                     break
-
                 direct = (page.get_text("text") or "").strip()
                 if direct:
-                    text_out.append(direct)
+                    page_texts.append(direct)
                     continue
-
                 if ocr_pages_used >= MAX_OCR_PAGES:
                     log.info(
                         "OCR page budget reached (%d). Skipping OCR for remaining pages.",
                         MAX_OCR_PAGES,
                     )
+                    page_texts.append("")
                     continue
+                pix = page.get_pixmap(matrix=MATRIX, alpha=False, colorspace=fitz.csGRAY)
+                images_for_ocr[idx] = pix.tobytes("png")
+                page_texts.append("")
+                ocr_pages_used += 1
 
-                try:
-                    pix = page.get_pixmap(matrix=MATRIX, alpha=False, colorspace=fitz.csGRAY)
-                    img = Image.open(io.BytesIO(pix.tobytes("png")))
-                    ocr_text = (ocr_image_fast(img) or "").strip()
-                    if ocr_text:
-                        text_out.append(ocr_text)
-                    ocr_pages_used += 1
-                except Exception as e:
-                    log.exception("OCR failed on page %s: %s", page_idx, e)
-                    continue
+        if images_for_ocr:
+            with ThreadPoolExecutor(max_workers=min(MAX_OCR_WORKERS, len(images_for_ocr))) as ex:
+                future_map = {
+                    ex.submit(_ocr_bytes, b): i for i, b in images_for_ocr.items()
+                }
+                for fut in as_completed(future_map):
+                    idx = future_map[fut]
+                    try:
+                        page_texts[idx] = fut.result()
+                    except Exception as e:
+                        log.exception("OCR failed on page %s: %s", idx, e)
+
+        full_text = "\n\n".join(t for t in page_texts if t).strip()
+        elapsed = time.perf_counter() - start
+        log.info(
+            "Extracted %d chars using %d OCR pages in %.2fs (pages=%d)",
+            len(full_text),
+            ocr_pages_used,
+            elapsed,
+            page_count,
+        )
+        return full_text, ocr_pages_used, elapsed
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"PDF open failed: {str(e)[:200]}")
-
-    full_text = "\n\n".join(text_out).strip()
-    elapsed = time.perf_counter() - start
-    log.info(
-        "Extracted %d chars using %d OCR pages in %.2fs (pages=%d)",
-        len(full_text),
-        ocr_pages_used,
-        elapsed,
-        page_count,
-    )
-    return full_text, ocr_pages_used, elapsed
 
 def extract_text_from_image(image_content):
     """Extract text from image using OCR"""
@@ -549,14 +562,23 @@ async def ask(body: AskBody):
     try:
         from openai import OpenAI
         import os
-        client = OpenAI(base_url="https://api.groq.com/openai/v1", api_key=os.getenv("OPENAI_API_KEY"))
-        system = "You answer questions about an Israeli payslip. Be concise. Hebrew."
+        client = OpenAI(
+            base_url="https://api.groq.com/openai/v1",
+            api_key=os.getenv("OPENAI_API_KEY"),
+        )
+        system = (
+            "You are an expert on Israeli payslips. Provide detailed, helpful answers in Hebrew. "
+            "Explain the reasoning and break down relevant numbers."
+        )
         messages = [
             {"role": "system", "content": system},
-            {"role": "user", "content": f"מידע תלוש:\n{context}\n\nשאלה:\n{body.question}"},
+            {
+                "role": "user",
+                "content": f"מידע תלוש:\n{context}\n\nשאלה:\n{body.question}",
+            },
         ]
         resp = client.chat.completions.create(
-            model="llama-3.1-8b-instant",
+            model="llama-3.3-70b-versatile",
             messages=messages,
             stream=False,
             timeout=60,
