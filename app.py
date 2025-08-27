@@ -1,14 +1,13 @@
 import streamlit as st
-import fitz  # PyMuPDF
 import pytesseract
 from PIL import Image
-import io
 from openai import OpenAI
 import os
 import base64
 import sqlite3
 import datetime
 import hashlib
+from src.ingest.extractor import extract_text
 
 # Configure the page
 st.set_page_config(
@@ -122,33 +121,6 @@ def setup_api():
         base_url="https://api.groq.com/openai/v1"
     )
     return client
-
-def extract_text_from_pdf(pdf_file):
-    """Extract text from PDF using PyMuPDF and OCR"""
-    try:
-        doc = fitz.open(stream=pdf_file.read(), filetype="pdf")
-        all_text = ""
-        
-        for page_num in range(len(doc)):
-            page = doc[page_num]
-            # First try to extract text directly
-            direct_text = page.get_text()
-            
-            if direct_text.strip():
-                all_text += direct_text + "\n"
-            else:
-                # If no direct text, use OCR
-                pix = page.get_pixmap()
-                img_bytes = pix.tobytes("png")
-                img = Image.open(io.BytesIO(img_bytes))
-                page_text = pytesseract.image_to_string(img, lang="heb+eng")
-                all_text += page_text + "\n"
-        
-        doc.close()
-        return all_text.strip()
-    except Exception as e:
-        st.error(f"שגיאה בעיבוד קובץ PDF: {str(e)}")
-        return None
 
 def extract_text_from_image(image_file):
     """Extract text from image using OCR"""
@@ -323,13 +295,15 @@ def main():
         # Process button
         if st.button("🔍 נתח את התלוש", type="primary"):
             with st.spinner("מעבד את הקובץ... זה עלול לקחת כמה שניות..."):
-                
+
+                file_bytes = uploaded_file.getvalue()
+
                 # Extract text based on file type
                 if uploaded_file.type == "application/pdf":
-                    extracted_text = extract_text_from_pdf(uploaded_file)
+                    extracted_text = extract_text(file_bytes)
                 else:
                     extracted_text = extract_text_from_image(uploaded_file)
-                
+
                 if extracted_text and extracted_text.strip():
                     # Show extracted text in expander
                     with st.expander("📝 הטקסט שחולץ מהקובץ"):
@@ -341,7 +315,7 @@ def main():
                         )
                     
                     # Calculate file hash for deduplication
-                    file_hash = calculate_file_hash(uploaded_file.getvalue())
+                    file_hash = calculate_file_hash(file_bytes)
                     
                     # Get AI explanation
                     with st.spinner("מקבל הסבר מהבינה המלאכותית..."):

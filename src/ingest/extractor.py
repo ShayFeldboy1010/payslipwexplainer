@@ -16,7 +16,7 @@ import io
 import logging
 import os
 import time
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from concurrent.futures import ProcessPoolExecutor, as_completed
 from typing import Dict, List
 
 import fitz  # PyMuPDF
@@ -36,7 +36,8 @@ log = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 MAX_OCR_PAGES = int(os.getenv("MAX_OCR_PAGES", "2"))
 MAX_TOTAL_SECONDS = float(os.getenv("MAX_TOTAL_SECONDS", "30"))
-OCR_SCALE = float(os.getenv("OCR_SCALE", "2.0"))
+# Lower default OCR scale for faster processing; still overridable via env var
+OCR_SCALE = float(os.getenv("OCR_SCALE", "1.0"))
 OCR_WORKERS = int(os.getenv("MAX_OCR_WORKERS", "4"))
 OCR_CONFIG = "--oem 3 --psm 6"  # reasonable balance between speed/accuracy
 _OCR_MATRIX = fitz.Matrix(OCR_SCALE, OCR_SCALE)
@@ -84,7 +85,9 @@ def _extract_pdf(pdf_bytes: bytes) -> str:
             ocr_used += 1
 
     if ocr_jobs:
-        with ThreadPoolExecutor(max_workers=min(len(ocr_jobs), OCR_WORKERS)) as ex:
+        # Use separate processes for OCR to bypass the GIL and utilise
+        # multiple CPU cores effectively.
+        with ProcessPoolExecutor(max_workers=min(len(ocr_jobs), OCR_WORKERS)) as ex:
             futures = {ex.submit(_ocr_image, b): i for i, b in ocr_jobs.items()}
             for fut in as_completed(futures):
                 page_index = futures[fut]

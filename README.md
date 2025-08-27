@@ -42,5 +42,15 @@ pytest
 
 ### OCR on Render
 This app uses Tesseract via `pytesseract` for scanned PDFs/images.
-Render installs it from `apt.txt` (tesseract-ocr, -eng, -heb).  
+Render installs it from `apt.txt` (tesseract-ocr, -eng, -heb).
 If OCR is missing, scanned files will fail with 400 and a clear message.
+
+### Extraction tuning
+
+The ingestion pipeline exposes a few environment variables for controlling
+performance vs. accuracy:
+
+- `MAX_OCR_PAGES` – maximum number of pages to run through OCR (default: 2)
+- `MAX_TOTAL_SECONDS` – abort processing after this many seconds (default: 30)
+- `OCR_SCALE` – rasterisation scale for OCR image generation (default: 1.0)
+- `MAX_OCR_WORKERS` – number of parallel OCR processes (default: 4)
