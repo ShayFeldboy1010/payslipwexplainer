@@ -1,7 +1,7 @@
 import base64
 import io
 import os
-from typing import Tuple
+import logging
 
 import requests
 from PIL import Image
@@ -30,12 +30,16 @@ def ocr_image_bytes(image_bytes: bytes) -> str:
                 {
                     "parts": [
                         {
-                            "mime_type": "image/png",
-                            "data": base64.b64encode(buf.getvalue()).decode("utf-8"),
-                        }
+                            "inline_data": {
+                                "mime_type": "image/png",
+                                "data": base64.b64encode(buf.getvalue()).decode("utf-8"),
+                            }
+                        },
+                        {
+                            "text": "Extract all text from this image and return it."
+                        },
                     ]
-                },
-                {"parts": [{"text": "Extract all text from this image and return it."}]},
+                }
             ]
         }
         url = (
@@ -53,8 +57,9 @@ def ocr_image_bytes(image_bytes: bytes) -> str:
                 .get("text", "")
                 .strip()
             )
-        except Exception:
-            txt = ""
+        except Exception as exc:
+            logging.exception("Gemini OCR request failed")
+            raise RuntimeError("Gemini OCR request failed") from exc
         if len(txt) > len(best):
             best = txt
         if len(best) > 20:
