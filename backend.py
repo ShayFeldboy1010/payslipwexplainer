@@ -212,7 +212,11 @@ def calculate_file_hash(file_content):
 
 def _ocr_bytes(img_bytes: bytes) -> str:
     """Run OCR on image bytes via Gemini API."""
-    return ocr_image_bytes(img_bytes)
+    try:
+        return ocr_image_bytes(img_bytes)
+    except Exception as exc:
+        log.exception("OCR failure")
+        raise RuntimeError("OCR failed") from exc
 
 
 def extract_text_from_pdf(pdf_content):
