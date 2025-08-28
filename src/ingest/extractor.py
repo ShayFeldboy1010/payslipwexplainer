@@ -1,97 +1,66 @@
-"""Efficient PDF/text extraction utilities.
+"""Fast PDF/text extraction leveraging PyMuPDF's native OCR.
 
-This module exposes :func:`extract_text` which tries to return readable text from
-either a binary PDF or a plain text file.  The previous implementation simply
-decoded the bytes as UTF-8 which worked for ``.txt`` fixtures but failed for
-real PDF uploads and required slow, external processing elsewhere.  The new
-implementation uses PyMuPDF for direct text extraction and only falls back to
-OCR when absolutely necessary.  Pages without embedded text are rasterised once
-and processed concurrently with ``pytesseract``.  Small time/page budgets ensure
-that even scanned payslips return results in a few seconds instead of minutes.
+This module exposes :func:`extract_text` which accepts either raw PDF bytes or
+plain UTF-8 encoded text.  For PDFs we rely on ``page.get_textpage_ocr`` – a
+PyMuPDF helper that combines regular text extraction with on-demand OCR of
+images.  This dramatically cuts processing time compared to the previous
+pipeline which rasterised pages and invoked ``pytesseract`` manually.  Only
+pages that genuinely require OCR are processed at a configurable DPI and the
+overall run time is bounded by a simple timeout.
+
+The end result: even large or scanned payslips are parsed in a few seconds
+without external services or heavyweight temporary files.
 """
 
 from __future__ import annotations
 
-import io
 import logging
 import os
 import time
-from concurrent.futures import ThreadPoolExecutor, as_completed
-from typing import Dict, List
+from typing import List
 
 import fitz  # PyMuPDF
-from PIL import Image
-
-try:  # Optional dependency: if missing we simply skip OCR fallback
-    import pytesseract
-except Exception:  # pragma: no cover - during tests we don't require OCR
-    pytesseract = None
 
 log = logging.getLogger(__name__)
 
 
 # ---------------------------------------------------------------------------
-# Configuration knobs.  These can be tuned via environment variables and keep
-# the extractor responsive even on large or fully‑scanned PDFs.
+# Configuration knobs.  They keep the extractor responsive and can be tuned via
+# environment variables.
 # ---------------------------------------------------------------------------
-MAX_OCR_PAGES = int(os.getenv("MAX_OCR_PAGES", "2"))
+OCR_DPI = int(os.getenv("OCR_DPI", "150"))  # resolution used for OCR fallback
 MAX_TOTAL_SECONDS = float(os.getenv("MAX_TOTAL_SECONDS", "30"))
-OCR_SCALE = float(os.getenv("OCR_SCALE", "2.0"))
-OCR_WORKERS = int(os.getenv("MAX_OCR_WORKERS", "4"))
-OCR_CONFIG = "--oem 3 --psm 6"  # reasonable balance between speed/accuracy
-_OCR_MATRIX = fitz.Matrix(OCR_SCALE, OCR_SCALE)
-
-
-def _ocr_image(image_bytes: bytes) -> str:
-    """Run Tesseract OCR on PNG bytes if available."""
-
-    if pytesseract is None:  # OCR engine missing
-        return ""
-    try:
-        img = Image.open(io.BytesIO(image_bytes))
-        return pytesseract.image_to_string(img, config=OCR_CONFIG)
-    except Exception:  # pragma: no cover - defensive programming
-        return ""
+OCR_LANG = os.getenv("OCR_LANG", "eng")
 
 
 def _extract_pdf(pdf_bytes: bytes) -> str:
-    """Extract text from a PDF, using selective OCR when necessary."""
+    """Extract text from *pdf_bytes* using PyMuPDF's integrated OCR."""
 
     start = time.perf_counter()
     page_texts: List[str] = []
-    ocr_jobs: Dict[int, bytes] = {}
-    ocr_used = 0
 
     with fitz.open(stream=pdf_bytes, filetype="pdf") as doc:
         for index, page in enumerate(doc):
+            # honour a crude timeout to avoid stalling on huge files
             if time.perf_counter() - start > MAX_TOTAL_SECONDS:
                 log.warning("PDF parse timeout at page %s", index)
                 break
 
+            # First attempt fast text extraction
             text = (page.get_text("text") or "").strip()
-            if text:  # regular selectable text; quick path
+            if text:
                 page_texts.append(text)
                 continue
 
-            if ocr_used >= MAX_OCR_PAGES:
+            # No text layer – fall back to MuPDF's OCR helper.  This call uses
+            # the Tesseract engine internally but avoids intermediate PNGs and
+            # subprocess management, yielding much faster results.
+            try:
+                tp = page.get_textpage_ocr(dpi=OCR_DPI, full=True, language=OCR_LANG)
+                page_texts.append((tp.extract_text() or "").strip())
+            except Exception as exc:  # pragma: no cover - defensive programming
+                log.warning("OCR failed for page %s: %s", index, exc)
                 page_texts.append("")
-                continue
-
-            # Fallback to OCR: rasterise once, store bytes for later
-            pix = page.get_pixmap(matrix=_OCR_MATRIX, alpha=False)
-            ocr_jobs[index] = pix.tobytes("png")
-            page_texts.append("")
-            ocr_used += 1
-
-    if ocr_jobs:
-        with ThreadPoolExecutor(max_workers=min(len(ocr_jobs), OCR_WORKERS)) as ex:
-            futures = {ex.submit(_ocr_image, b): i for i, b in ocr_jobs.items()}
-            for fut in as_completed(futures):
-                page_index = futures[fut]
-                try:
-                    page_texts[page_index] = fut.result().strip()
-                except Exception:  # pragma: no cover - robustness
-                    pass
 
     return "\n\n".join(t for t in page_texts if t)
 
@@ -99,20 +68,21 @@ def _extract_pdf(pdf_bytes: bytes) -> str:
 def extract_text(data: bytes) -> str:
     """Return extracted text from *data*.
 
-    ``data`` may represent a binary PDF or a plain UTF‑8 text file.  The
-    function auto‑detects the format and uses the most efficient extraction
+    ``data`` may represent a binary PDF or a plain UTF-8 text file.  The
+    function auto-detects the format and chooses the fastest extraction
     strategy available.
     """
 
-    # Fast path for PDFs detected by their magic header
+    # Quick check for PDF magic header
     if data.lstrip().startswith(b"%PDF"):
         try:
             return _extract_pdf(data)
-        except Exception as exc:
+        except Exception as exc:  # pragma: no cover - robustness
             log.warning("PDF extraction failed: %s", exc)
 
-    # Fall back to simple UTF‑8 decode for text files
+    # Fall back to decoding as UTF-8 text
     try:
         return data.decode("utf-8")
     except Exception:
         return ""
+
