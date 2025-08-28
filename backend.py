@@ -301,6 +301,14 @@ def extract_text_from_pdf(pdf_content):
                 if direct:
                     page_texts.append(direct)
                     continue
+                if not TESSERACT_AVAILABLE:
+                    raise HTTPException(
+                        status_code=400,
+                        detail=(
+                            "PDF appears to be image-based but OCR is not available on server "
+                            "(missing tesseract). Upload a text-based PDF or enable OCR."
+                        ),
+                    )
                 if ocr_pages_used >= MAX_OCR_PAGES:
                     log.info(
                         "OCR page budget reached (%d). Skipping OCR for remaining pages.",
