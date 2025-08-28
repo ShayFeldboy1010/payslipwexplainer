@@ -216,10 +216,15 @@ def _ocr_bytes(img_bytes: bytes) -> str:
 
 
 def extract_text_from_pdf(pdf_content):
-    """Extract text from PDF using Gemini OCR for image-only pages."""
+    """Extract text from PDF using Gemini OCR for image-only pages.
+
+    If initial extraction returns no text (e.g. due to a very low OCR page budget),
+    a second pass will OCR any skipped pages.
+    """
     start = time.perf_counter()
     ocr_pages_used = 0
     page_texts: List[str] = []
+    pending_ocr: List[tuple[int, bytes]] = []
     try:
         with fitz.open(stream=pdf_content, filetype="pdf") as doc:
             page_count = doc.page_count
@@ -231,18 +236,29 @@ def extract_text_from_pdf(pdf_content):
                 if direct:
                     page_texts.append(direct)
                     continue
+                pix = page.get_pixmap(matrix=MATRIX, alpha=False, colorspace=fitz.csGRAY)
                 if ocr_pages_used >= MAX_OCR_PAGES:
-                    log.info(
-                        "OCR page budget reached (%d). Skipping OCR for remaining pages.",
-                        MAX_OCR_PAGES,
-                    )
+                    pending_ocr.append((idx, pix.tobytes("png")))
                     page_texts.append("")
                     continue
-                pix = page.get_pixmap(matrix=MATRIX, alpha=False, colorspace=fitz.csGRAY)
-                page_texts.append(_ocr_bytes(pix.tobytes("png")))
-                ocr_pages_used += 1
+                text = _ocr_bytes(pix.tobytes("png"))
+                page_texts.append(text)
+                if text:
+                    ocr_pages_used += 1
 
         full_text = "\n\n".join(t for t in page_texts if t).strip()
+
+        if not full_text and pending_ocr:
+            for idx, data in pending_ocr:
+                if (time.perf_counter() - start) > MAX_TOTAL_SECONDS:
+                    log.warning("OCR timeout during fallback at page %s", idx)
+                    break
+                text = _ocr_bytes(data)
+                page_texts[idx] = text
+                if text:
+                    ocr_pages_used += 1
+            full_text = "\n\n".join(t for t in page_texts if t).strip()
+
         elapsed = time.perf_counter() - start
         log.info(
             "Extracted %d chars using %d OCR pages in %.2fs (pages=%d)",
