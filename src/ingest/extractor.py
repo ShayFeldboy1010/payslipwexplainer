@@ -1,15 +1,13 @@
-"""Fast PDF/text extraction leveraging PyMuPDF's native OCR.
+"""Fast PDF/text extraction leveraging Google Gemini for OCR.
 
 This module exposes :func:`extract_text` which accepts either raw PDF bytes or
-plain UTF-8 encoded text.  For PDFs we rely on ``page.get_textpage_ocr`` – a
-PyMuPDF helper that combines regular text extraction with on-demand OCR of
-images.  This dramatically cuts processing time compared to the previous
-pipeline which rasterised pages and invoked ``pytesseract`` manually.  Only
-pages that genuinely require OCR are processed at a configurable DPI and the
-overall run time is bounded by a simple timeout.
+plain UTF-8 encoded text.  For PDFs we rely on PyMuPDF to extract any embedded
+text layer and fall back to sending page images to the Gemini API when OCR is
+required.  Only pages that genuinely require OCR are processed and the overall
+run time is bounded by a simple timeout.
 
 The end result: even large or scanned payslips are parsed in a few seconds
-without external services or heavyweight temporary files.
+without the need for local Tesseract installations.
 """
 
 from __future__ import annotations
@@ -20,6 +18,7 @@ import time
 from typing import List
 
 import fitz  # PyMuPDF
+from gemini_ocr import ocr_image_bytes
 
 log = logging.getLogger(__name__)
 
@@ -28,13 +27,11 @@ log = logging.getLogger(__name__)
 # Configuration knobs.  They keep the extractor responsive and can be tuned via
 # environment variables.
 # ---------------------------------------------------------------------------
-OCR_DPI = int(os.getenv("OCR_DPI", "150"))  # resolution used for OCR fallback
 MAX_TOTAL_SECONDS = float(os.getenv("MAX_TOTAL_SECONDS", "30"))
-OCR_LANG = os.getenv("OCR_LANG", "heb+eng")
 
 
 def _extract_pdf(pdf_bytes: bytes) -> str:
-    """Extract text from *pdf_bytes* using PyMuPDF's integrated OCR."""
+    """Extract text from *pdf_bytes* using Gemini OCR for image-only pages."""
 
     start = time.perf_counter()
     page_texts: List[str] = []
@@ -52,12 +49,10 @@ def _extract_pdf(pdf_bytes: bytes) -> str:
                 page_texts.append(text)
                 continue
 
-            # No text layer – fall back to MuPDF's OCR helper.  This call uses
-            # the Tesseract engine internally but avoids intermediate PNGs and
-            # subprocess management, yielding much faster results.
+            # No text layer – fall back to Gemini OCR
             try:
-                tp = page.get_textpage_ocr(dpi=OCR_DPI, full=True, language=OCR_LANG)
-                page_texts.append((tp.extract_text() or "").strip())
+                pix = page.get_pixmap()
+                page_texts.append(ocr_image_bytes(pix.tobytes("png")))
             except Exception as exc:  # pragma: no cover - defensive programming
                 log.warning("OCR failed for page %s: %s", index, exc)
                 page_texts.append("")
