@@ -38,7 +38,9 @@ MAX_TOTAL_SECONDS = int(os.getenv("MAX_TOTAL_SECONDS", "60"))
 MAX_BYTES = 8 * 1024 * 1024  # 8MB
 
 # Rasterization/OCR tuning
-SCALE = float(os.getenv("OCR_SCALE", "2.0"))  # higher for better accuracy
+# Increase default scale to improve OCR accuracy on small Hebrew text.
+# Can be overridden with OCR_SCALE env variable if needed.
+SCALE = float(os.getenv("OCR_SCALE", "3.0"))  # higher for better accuracy
 MATRIX = fitz.Matrix(SCALE, SCALE)
 USE_LANG = "heb+eng"  # will auto-fallback below
 OCR_CONFIG = "--oem 3 --psm 6"  # balance speed and accuracy
@@ -264,8 +266,22 @@ def calculate_file_hash(file_content):
     return hashlib.md5(file_content).hexdigest()
 
 def _ocr_bytes(img_bytes: bytes) -> str:
+    """Run OCR on image bytes with basic orientation handling.
+
+    Tries multiple rotations (0/90/180/270) and picks the longest result
+    to handle scans that are saved sideways.
+    """
     img = Image.open(io.BytesIO(img_bytes))
-    return (ocr_image_fast(img) or "").strip()
+    best = ""
+    for angle in (0, 90, 180, 270):
+        rotated = img.rotate(angle, expand=True) if angle else img
+        txt = (ocr_image_fast(rotated) or "").strip()
+        if len(txt) > len(best):
+            best = txt
+        # If we already have some reasonable text, no need to try more rotations
+        if len(best) > 20:
+            break
+    return best
 
 
 def extract_text_from_pdf(pdf_content):
@@ -323,23 +339,17 @@ def extract_text_from_pdf(pdf_content):
         raise HTTPException(status_code=400, detail=f"PDF open failed: {str(e)[:200]}")
 
 def extract_text_from_image(image_content):
-    """Extract text from image using OCR"""
+    """Extract text from image using OCR with orientation handling."""
     if not TESSERACT_AVAILABLE:
         raise HTTPException(
             status_code=400,
             detail="OCR is not available on server (missing tesseract)",
         )
     try:
-        image = Image.open(io.BytesIO(image_content))
-        # Convert to RGB if needed
-        if image.mode != 'RGB':
-            image = image.convert('RGB')
-
-        try:
-            text = pytesseract.image_to_string(image, lang="heb+eng")
-        except Exception:
-            text = pytesseract.image_to_string(image)
-        return text.strip()
+        return _ocr_bytes(image_content)
+    except HTTPException:
+        # Pass through HTTP errors raised by _ocr_bytes/ocr_image_fast
+        raise
     except Exception:
         raise HTTPException(status_code=400, detail="שגיאה ב-OCR של התמונה.")
 
