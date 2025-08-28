@@ -30,7 +30,7 @@ log = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 OCR_DPI = int(os.getenv("OCR_DPI", "150"))  # resolution used for OCR fallback
 MAX_TOTAL_SECONDS = float(os.getenv("MAX_TOTAL_SECONDS", "30"))
-OCR_LANG = os.getenv("OCR_LANG", "eng")
+OCR_LANG = os.getenv("OCR_LANG", "heb+eng")
 
 
 def _extract_pdf(pdf_bytes: bytes) -> str:
