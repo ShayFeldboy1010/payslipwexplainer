@@ -1,15 +1,13 @@
 import streamlit as st
 import fitz  # PyMuPDF
-import pytesseract
 from PIL import Image
 import io
-from concurrent.futures import ThreadPoolExecutor, as_completed
 from openai import OpenAI
 import os
-import base64
 import sqlite3
 import datetime
 import hashlib
+from src.gemini_ocr import ocr_image_bytes
 
 # Configure the page
 st.set_page_config(
@@ -125,15 +123,12 @@ def setup_api():
     return client
 
 OCR_SCALE = 2.0
-OCR_WORKERS = 4
-OCR_CONFIG = "--oem 3 --psm 6"
 
 
 def _ocr_page(image_bytes: bytes) -> str:
-    """Run OCR on a PNG byte stream."""
+    """Run OCR on a PNG byte stream via Gemini."""
     try:
-        img = Image.open(io.BytesIO(image_bytes))
-        return pytesseract.image_to_string(img, lang="heb+eng", config=OCR_CONFIG)
+        return ocr_image_bytes(image_bytes)
     except Exception:
         return ""
 
@@ -157,10 +152,8 @@ def extract_text_from_pdf(pdf_file):
                 page_texts.append("")
 
         if ocr_jobs:
-            with ThreadPoolExecutor(max_workers=min(len(ocr_jobs), OCR_WORKERS)) as ex:
-                futures = {ex.submit(_ocr_page, b): i for i, b in ocr_jobs.items()}
-                for fut in as_completed(futures):
-                    page_texts[futures[fut]] = fut.result().strip()
+            for idx, data in ocr_jobs.items():
+                page_texts[idx] = _ocr_page(data).strip()
 
         return "\n\n".join(t for t in page_texts if t).strip()
     except Exception as e:
@@ -175,8 +168,9 @@ def extract_text_from_image(image_file):
         if image.mode != 'RGB':
             image = image.convert('RGB')
         
-        text = pytesseract.image_to_string(image, lang="heb+eng")
-        return text.strip()
+        buf = io.BytesIO()
+        image.save(buf, format="PNG")
+        return ocr_image_bytes(buf.getvalue()).strip()
     except Exception as e:
         st.error(f"שגיאה בעיבוד קובץ תמונה: {str(e)}")
         return None

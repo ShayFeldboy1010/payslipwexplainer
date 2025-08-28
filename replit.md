@@ -84,7 +84,7 @@ Preferred communication style: Simple, everyday language.
    - PDF is opened using PyMuPDF
    - Each page is processed sequentially
    - Direct text extraction is attempted first
-   - If no text is found, page is converted to image for OCR
+   - If no text is found, page is converted to image for OCR via Google Gemini
 3. **Text Aggregation**: Extracted text from all pages is combined
 4. **AI Processing**: Combined text can be sent to Groq API for analysis
 5. **Results Display**: Processed results are displayed in the Streamlit interface
@@ -94,13 +94,12 @@ Preferred communication style: Simple, everyday language.
 ## Core Libraries
 - **streamlit**: Web application framework
 - **PyMuPDF (fitz)**: PDF processing and manipulation
-- **pytesseract**: Python wrapper for Tesseract OCR engine
+- **requests**: HTTP client for Google Gemini API
 - **PIL (Pillow)**: Image processing for OCR pipeline
 - **openai**: API client for AI model interaction
 
 ## System Dependencies
-- **Tesseract OCR Engine**: Must be installed on the system
-- **Hebrew Language Pack**: Required for Hebrew OCR functionality
+- **Google Gemini API**: Used for OCR of scanned documents
 
 ## API Dependencies
 - **Groq API**: External AI service for text analysis
@@ -110,13 +109,12 @@ Preferred communication style: Simple, everyday language.
 
 ## Environment Requirements
 - Python runtime with required packages
-- Tesseract OCR engine installation
-- Hebrew language data for Tesseract
+- Google Gemini API key
 - Network access to Groq API endpoints
 
 ## Configuration
 - **API Key**: Set via OPENAI_API_KEY environment variable
-- **OCR Languages**: Configured for "heb+eng" (Hebrew + English)
+- **OCR Languages**: Automatically handled by Gemini
 - **Streamlit Config**: Centered layout, Hebrew interface
 
 ## Security Considerations

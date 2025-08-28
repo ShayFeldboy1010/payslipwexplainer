@@ -1,36 +1,19 @@
-import time, io, os, shutil, logging
+import time, os, logging
 from fastapi import FastAPI, HTTPException, UploadFile, File, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, JSONResponse
 from typing import Optional, List
 from pydantic import BaseModel
 import fitz  # PyMuPDF
-from PIL import Image
 from openai import OpenAI
 import sqlite3
 import datetime
 import hashlib
-from concurrent.futures import ThreadPoolExecutor, as_completed
 from db import init_db, save_payslip, get_payslip, latest_payslip_id, list_payslips
+from src.gemini_ocr import ocr_image_bytes
 
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger("payslip")
-
-try:
-    import pytesseract
-
-    def _detect_tess():
-        path = shutil.which("tesseract")
-        ver = str(pytesseract.get_tesseract_version()) if path else None
-        langs = pytesseract.get_languages(config="") if path else []
-        return path, ver, langs
-
-    TESSERACT_PATH, TESSERACT_VERSION, TESSERACT_LANGS = _detect_tess()
-except Exception:
-    pytesseract = None
-    TESSERACT_PATH, TESSERACT_VERSION, TESSERACT_LANGS = None, None, []
-
-TESSERACT_AVAILABLE = TESSERACT_PATH is not None
 
 # OCR budgets to avoid long hangs
 MAX_OCR_PAGES = int(os.getenv("MAX_OCR_PAGES", "3"))
@@ -38,34 +21,8 @@ MAX_TOTAL_SECONDS = int(os.getenv("MAX_TOTAL_SECONDS", "60"))
 MAX_BYTES = 8 * 1024 * 1024  # 8MB
 
 # Rasterization/OCR tuning
-# Increase default scale to improve OCR accuracy on small Hebrew text.
-# Can be overridden with OCR_SCALE env variable if needed.
 SCALE = float(os.getenv("OCR_SCALE", "3.0"))  # higher for better accuracy
 MATRIX = fitz.Matrix(SCALE, SCALE)
-USE_LANG = "heb+eng"  # will auto-fallback below
-OCR_CONFIG = "--oem 3 --psm 6"  # balance speed and accuracy
-MAX_OCR_WORKERS = int(os.getenv("MAX_OCR_WORKERS", "4"))
-
-
-def ocr_image_fast(pil_img):
-    """Run tesseract OCR with language fallback."""
-    if not TESSERACT_AVAILABLE:
-        raise HTTPException(status_code=400, detail="OCR is not available on server")
-    lang = USE_LANG if "heb" in TESSERACT_LANGS else "eng"
-    try:
-        return pytesseract.image_to_string(
-            pil_img.convert("L"), lang=lang, config=OCR_CONFIG
-        )
-    except Exception:
-        # last resort: let tesseract auto-detect
-        return pytesseract.image_to_string(pil_img.convert("L"), config=OCR_CONFIG)
-log.info(
-    "Tesseract available=%s path=%s ver=%s langs_count=%d",
-    TESSERACT_AVAILABLE,
-    TESSERACT_PATH,
-    TESSERACT_VERSION,
-    len(TESSERACT_LANGS),
-)
 
 if not os.getenv("OPENAI_API_KEY"):
     # Do not raise immediately on import if you prefer; you can check inside the handler instead.
@@ -87,24 +44,12 @@ app.add_middleware(
 
 @app.get("/healthz")
 async def healthz():
-    return {
-        "status": "ok",
-        "ocr": {
-            "available": TESSERACT_AVAILABLE,
-            "version": TESSERACT_VERSION,
-            "langs_count": len(TESSERACT_LANGS),
-        },
-    }
+    return {"status": "ok", "ocr": "gemini"}
 
 
 @app.get("/debug/ocr")
 async def debug_ocr():
-    return {
-        "available": TESSERACT_AVAILABLE,
-        "path": TESSERACT_PATH,
-        "version": TESSERACT_VERSION,
-        "langs": TESSERACT_LANGS,
-    }
+    return {"provider": "gemini", "model": os.getenv("GEMINI_MODEL", "gemini-2.5-flash")}
 
 
 @app.get("/", response_class=HTMLResponse)
@@ -266,33 +211,18 @@ def calculate_file_hash(file_content):
     return hashlib.md5(file_content).hexdigest()
 
 def _ocr_bytes(img_bytes: bytes) -> str:
-    """Run OCR on image bytes with basic orientation handling.
-
-    Tries multiple rotations (0/90/180/270) and picks the longest result
-    to handle scans that are saved sideways.
-    """
-    img = Image.open(io.BytesIO(img_bytes))
-    best = ""
-    for angle in (0, 90, 180, 270):
-        rotated = img.rotate(angle, expand=True) if angle else img
-        txt = (ocr_image_fast(rotated) or "").strip()
-        if len(txt) > len(best):
-            best = txt
-        # If we already have some reasonable text, no need to try more rotations
-        if len(best) > 20:
-            break
-    return best
+    """Run OCR on image bytes via Gemini API."""
+    return ocr_image_bytes(img_bytes)
 
 
 def extract_text_from_pdf(pdf_content):
-    """Extract text from PDF with time/page budgets and parallel OCR fallback."""
+    """Extract text from PDF using Gemini OCR for image-only pages."""
     start = time.perf_counter()
     ocr_pages_used = 0
     page_texts: List[str] = []
     try:
         with fitz.open(stream=pdf_content, filetype="pdf") as doc:
             page_count = doc.page_count
-            images_for_ocr = {}
             for idx, page in enumerate(doc):
                 if (time.perf_counter() - start) > MAX_TOTAL_SECONDS:
                     log.warning("OCR timeout budget hit at page %s", idx)
@@ -301,14 +231,6 @@ def extract_text_from_pdf(pdf_content):
                 if direct:
                     page_texts.append(direct)
                     continue
-                if not TESSERACT_AVAILABLE:
-                    raise HTTPException(
-                        status_code=400,
-                        detail=(
-                            "PDF appears to be image-based but OCR is not available on server "
-                            "(missing tesseract). Upload a text-based PDF or enable OCR."
-                        ),
-                    )
                 if ocr_pages_used >= MAX_OCR_PAGES:
                     log.info(
                         "OCR page budget reached (%d). Skipping OCR for remaining pages.",
@@ -317,21 +239,8 @@ def extract_text_from_pdf(pdf_content):
                     page_texts.append("")
                     continue
                 pix = page.get_pixmap(matrix=MATRIX, alpha=False, colorspace=fitz.csGRAY)
-                images_for_ocr[idx] = pix.tobytes("png")
-                page_texts.append("")
+                page_texts.append(_ocr_bytes(pix.tobytes("png")))
                 ocr_pages_used += 1
-
-        if images_for_ocr:
-            with ThreadPoolExecutor(max_workers=min(MAX_OCR_WORKERS, len(images_for_ocr))) as ex:
-                future_map = {
-                    ex.submit(_ocr_bytes, b): i for i, b in images_for_ocr.items()
-                }
-                for fut in as_completed(future_map):
-                    idx = future_map[fut]
-                    try:
-                        page_texts[idx] = fut.result()
-                    except Exception as e:
-                        log.exception("OCR failed on page %s: %s", idx, e)
 
         full_text = "\n\n".join(t for t in page_texts if t).strip()
         elapsed = time.perf_counter() - start
@@ -347,17 +256,9 @@ def extract_text_from_pdf(pdf_content):
         raise HTTPException(status_code=400, detail=f"PDF open failed: {str(e)[:200]}")
 
 def extract_text_from_image(image_content):
-    """Extract text from image using OCR with orientation handling."""
-    if not TESSERACT_AVAILABLE:
-        raise HTTPException(
-            status_code=400,
-            detail="OCR is not available on server (missing tesseract)",
-        )
+    """Extract text from image using Gemini OCR."""
     try:
         return _ocr_bytes(image_content)
-    except HTTPException:
-        # Pass through HTTP errors raised by _ocr_bytes/ocr_image_fast
-        raise
     except Exception:
         raise HTTPException(status_code=400, detail="שגיאה ב-OCR של התמונה.")
 

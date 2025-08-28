@@ -21,10 +21,9 @@ def create_scanned_pdf(text: str, rotate: int = 0) -> bytes:
 def test_rotated_pdf_ocr(monkeypatch):
     """Ensure OCR can handle sideways scanned PDFs."""
     monkeypatch.setenv("OPENAI_API_KEY", "test")
+    if not os.getenv("GOOGLE_API_KEY"):
+        pytest.skip("google api key not available")
     backend = importlib.reload(importlib.import_module("backend"))
-
-    if not backend.TESSERACT_AVAILABLE:
-        pytest.skip("tesseract not available")
 
     pdf_bytes = create_scanned_pdf("Gross 12345", rotate=90)
     text, pages_used, _ = backend.extract_text_from_pdf(pdf_bytes)
