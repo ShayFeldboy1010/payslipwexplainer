@@ -2,6 +2,7 @@ import base64
 import io
 import os
 import logging
+import time
 
 import requests
 from PIL import Image
@@ -46,20 +47,30 @@ def ocr_image_bytes(image_bytes: bytes) -> str:
             f"https://generativelanguage.googleapis.com/v1/models/{GEMINI_MODEL}:generateContent"
             f"?key={API_KEY}"
         )
-        try:
-            resp = requests.post(url, json=payload, timeout=30)
-            resp.raise_for_status()
-            txt = (
-                resp.json()
-                .get("candidates", [{}])[0]
-                .get("content", {})
-                .get("parts", [{}])[0]
-                .get("text", "")
-                .strip()
-            )
-        except Exception as exc:
-            logging.exception("Gemini OCR request failed")
-            raise RuntimeError("Gemini OCR request failed") from exc
+        txt = ""
+        for attempt in range(3):
+            try:
+                resp = requests.post(url, json=payload, timeout=90)
+                resp.raise_for_status()
+                txt = (
+                    resp.json()
+                    .get("candidates", [{}])[0]
+                    .get("content", {})
+                    .get("parts", [{}])[0]
+                    .get("text", "")
+                    .strip()
+                )
+                break
+            except requests.exceptions.Timeout:
+                if attempt == 2:
+                    logging.exception("Gemini OCR request timed out")
+                    raise RuntimeError("Gemini OCR request failed")
+                wait = 2 ** attempt
+                logging.warning("Gemini OCR timeout, retrying in %s s", wait)
+                time.sleep(wait)
+            except Exception as exc:
+                logging.exception("Gemini OCR request failed")
+                raise RuntimeError("Gemini OCR request failed") from exc
         if len(txt) > len(best):
             best = txt
         if len(best) > 20:
