@@ -10,7 +10,8 @@ import sqlite3
 import datetime
 import hashlib
 from db import init_db, save_payslip, get_payslip, latest_payslip_id, list_payslips
-from src.gemini_ocr import ocr_image_bytes
+import shutil
+from src.ocr import ocr_image_bytes
 
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger("payslip")
@@ -42,14 +43,24 @@ app.add_middleware(
 )
 
 
+def _ocr_provider() -> str:
+    if os.getenv("GOOGLE_API_KEY"):
+        return "gemini"
+    if shutil.which("tesseract"):
+        return "tesseract"
+    return "none"
+
+
 @app.get("/healthz")
 async def healthz():
-    return {"status": "ok", "ocr": "gemini"}
+    return {"status": "ok", "ocr": _ocr_provider()}
 
 
 @app.get("/debug/ocr")
 async def debug_ocr():
-    return {"provider": "gemini", "model": os.getenv("GEMINI_MODEL", "gemini-2.5-flash")}
+    provider = _ocr_provider()
+    model = os.getenv("GEMINI_MODEL", "gemini-2.5-flash") if provider == "gemini" else "tesseract"
+    return {"provider": provider, "model": model}
 
 
 @app.get("/", response_class=HTMLResponse)
@@ -211,7 +222,7 @@ def calculate_file_hash(file_content):
     return hashlib.md5(file_content).hexdigest()
 
 def _ocr_bytes(img_bytes: bytes) -> str:
-    """Run OCR on image bytes via Gemini API."""
+    """Run OCR on image bytes via the configured backend."""
     try:
         return ocr_image_bytes(img_bytes)
     except Exception as exc:
@@ -220,7 +231,7 @@ def _ocr_bytes(img_bytes: bytes) -> str:
 
 
 def extract_text_from_pdf(pdf_content):
-    """Extract text from PDF using Gemini OCR for image-only pages.
+    """Extract text from PDF using OCR for image-only pages.
 
     If initial extraction returns no text (e.g. due to a very low OCR page budget),
     a second pass will OCR any skipped pages.
@@ -276,7 +287,7 @@ def extract_text_from_pdf(pdf_content):
         raise HTTPException(status_code=400, detail=f"PDF open failed: {str(e)[:200]}")
 
 def extract_text_from_image(image_content):
-    """Extract text from image using Gemini OCR."""
+    """Extract text from image using the configured OCR backend."""
     try:
         return _ocr_bytes(image_content)
     except Exception:

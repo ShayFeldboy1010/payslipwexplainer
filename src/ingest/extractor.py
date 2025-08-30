@@ -1,13 +1,14 @@
-"""Fast PDF/text extraction leveraging Google Gemini for OCR.
+"""Fast PDF/text extraction with optional OCR.
 
 This module exposes :func:`extract_text` which accepts either raw PDF bytes or
 plain UTF-8 encoded text.  For PDFs we rely on PyMuPDF to extract any embedded
-text layer and fall back to sending page images to the Gemini API when OCR is
-required.  Only pages that genuinely require OCR are processed and the overall
-run time is bounded by a simple timeout.
+text layer and fall back to sending page images to the OCR backend (Gemini or
+Tesseract) when required.  Only pages that genuinely require OCR are processed
+and the overall run time is bounded by a simple timeout.
 
-The end result: even large or scanned payslips are parsed in a few seconds
-without the need for local Tesseract installations.
+The end result: even large or scanned payslips are parsed quickly without
+requiring external dependencies when a Gemini key is available or falling back
+to local Tesseract otherwise.
 """
 
 from __future__ import annotations
@@ -18,7 +19,7 @@ import time
 from typing import List
 
 import fitz  # PyMuPDF
-from gemini_ocr import ocr_image_bytes
+from ocr import ocr_image_bytes
 
 log = logging.getLogger(__name__)
 
@@ -31,7 +32,7 @@ MAX_TOTAL_SECONDS = float(os.getenv("MAX_TOTAL_SECONDS", "30"))
 
 
 def _extract_pdf(pdf_bytes: bytes) -> str:
-    """Extract text from *pdf_bytes* using Gemini OCR for image-only pages."""
+    """Extract text from *pdf_bytes* using OCR for image-only pages."""
 
     start = time.perf_counter()
     page_texts: List[str] = []
@@ -49,7 +50,7 @@ def _extract_pdf(pdf_bytes: bytes) -> str:
                 page_texts.append(text)
                 continue
 
-            # No text layer – fall back to Gemini OCR
+            # No text layer – fall back to OCR
             try:
                 pix = page.get_pixmap()
                 page_texts.append(ocr_image_bytes(pix.tobytes("png")))

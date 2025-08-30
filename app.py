@@ -7,7 +7,7 @@ import os
 import sqlite3
 import datetime
 import hashlib
-from src.gemini_ocr import ocr_image_bytes
+from src.ocr import ocr_image_bytes
 
 # Configure the page
 st.set_page_config(
@@ -126,7 +126,7 @@ OCR_SCALE = 2.0
 
 
 def _ocr_page(image_bytes: bytes) -> str:
-    """Run OCR on a PNG byte stream via Gemini."""
+    """Run OCR on a PNG byte stream via the configured backend."""
     try:
         return ocr_image_bytes(image_bytes)
     except Exception:
