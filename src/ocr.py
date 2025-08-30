@@ -12,12 +12,18 @@ from __future__ import annotations
 import os
 import shutil
 
-from gemini_ocr import ocr_image_bytes as _gemini_ocr
+try:  # package-relative import
+    from .gemini_ocr import ocr_image_bytes as _gemini_ocr
+except Exception:  # fallback when imported as a script
+    from gemini_ocr import ocr_image_bytes as _gemini_ocr  # type: ignore
 
 try:  # pragma: no cover - exercised in tests if available
-    from tesseract_ocr import ocr_image_bytes as _tesseract_ocr
+    from .tesseract_ocr import ocr_image_bytes as _tesseract_ocr
 except Exception:  # pragma: no cover - defensive: pytesseract missing
-    _tesseract_ocr = None  # type: ignore
+    try:
+        from tesseract_ocr import ocr_image_bytes as _tesseract_ocr  # type: ignore
+    except Exception:
+        _tesseract_ocr = None  # type: ignore
 
 
 def _tesseract_available() -> bool:
