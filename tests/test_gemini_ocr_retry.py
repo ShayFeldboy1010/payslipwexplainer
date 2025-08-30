@@ -1,8 +1,11 @@
 import io
 import importlib
+import os
+import sys
 
 from PIL import Image
-import requests
+
+sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 
 
 def test_retry_on_timeout(monkeypatch):
@@ -12,18 +15,32 @@ def test_retry_on_timeout(monkeypatch):
     calls = {"n": 0}
     expected = "X" * 25
 
-    def fake_post(url, json, timeout):
-        calls["n"] += 1
-        if calls["n"] == 1:
-            raise requests.exceptions.Timeout()
-        class Resp:
-            def raise_for_status(self):
-                pass
-            def json(self):
-                return {"candidates": [{"content": {"parts": [{"text": expected}]}}]}
-        return Resp()
+    class DummyModel:
+        def generate_content(self, parts):
+            calls["n"] += 1
+            if calls["n"] == 1:
+                raise TimeoutError()
+            class Resp:
+                def __init__(self, text):
+                    self.candidates = [
+                        type(
+                            "C",
+                            (),
+                            {
+                                "content": type(
+                                    "Cont",
+                                    (),
+                                    {"parts": [type("P", (), {"text": text})()]},
+                                )(),
+                            },
+                        )
+                    ]
 
-    monkeypatch.setattr(gemini.requests, "post", fake_post)
+            return Resp(expected)
+
+    monkeypatch.setattr(gemini.genai, "configure", lambda **_: None, raising=False)
+    monkeypatch.setattr(gemini.genai, "GenerativeModel", lambda model: DummyModel(), raising=False)
+    monkeypatch.setattr(gemini.time, "sleep", lambda _: None)
 
     img = Image.new("RGB", (50, 50), "white")
     buf = io.BytesIO()
