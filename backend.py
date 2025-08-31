@@ -2,12 +2,10 @@ import time, os, logging
 from fastapi import FastAPI, HTTPException, UploadFile, File, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, JSONResponse
-from typing import Optional, List
+from typing import List
 from pydantic import BaseModel
 import fitz  # PyMuPDF
 from openai import OpenAI
-import sqlite3
-import datetime
 import hashlib
 from db import init_db, save_payslip, get_payslip, latest_payslip_id, list_payslips
 import shutil
@@ -156,66 +154,6 @@ def setup_api():
         base_url="https://api.groq.com/openai/v1"
     )
     return client
-
-# Database functions
-def init_database():
-    """Initialize SQLite database for user data"""
-    conn = sqlite3.connect('payslip_data.db')
-    cursor = conn.cursor()
-    
-    # Create users table
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS users (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_id TEXT UNIQUE,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-    ''')
-    
-    # Create payslips table
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS payslips (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_id TEXT,
-            filename TEXT,
-            file_hash TEXT,
-            extracted_text TEXT,
-            ai_analysis TEXT,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (user_id) REFERENCES users (user_id)
-        )
-    ''')
-    
-    conn.commit()
-    conn.close()
-
-def save_payslip_analysis(user_id, filename, file_hash, extracted_text, ai_analysis):
-    """Save payslip analysis to database"""
-    conn = sqlite3.connect('payslip_data.db')
-    cursor = conn.cursor()
-    cursor.execute('''
-        INSERT INTO payslips (user_id, filename, file_hash, extracted_text, ai_analysis)
-        VALUES (?, ?, ?, ?, ?)
-    ''', (user_id, filename, file_hash, extracted_text, ai_analysis))
-    payslip_id = cursor.lastrowid
-    conn.commit()
-    conn.close()
-    return payslip_id
-
-def get_user_payslips(user_id):
-    """Get all payslips for a user"""
-    conn = sqlite3.connect('payslip_data.db')
-    cursor = conn.cursor()
-    cursor.execute('''
-        SELECT id, filename, created_at, extracted_text, ai_analysis
-        FROM payslips 
-        WHERE user_id = ? 
-        ORDER BY created_at DESC
-        LIMIT 10
-    ''', (user_id,))
-    results = cursor.fetchall()
-    conn.close()
-    return results
 
 def calculate_file_hash(file_content):
     """Calculate hash of file content"""
@@ -595,12 +533,14 @@ async def compare_payslips(files: List[UploadFile] = File(...)):
     # Get AI comparison analysis
     comparison_analysis = compare_payslips_with_ai(payslips_data, client)
     
-    # Save comparison to database
-    user_id = "web_user"
+    # Save comparison to database using existing helper
     for payslip in payslips_data:
-        file_hash = calculate_file_hash(payslip["extracted_text"].encode())
-        save_payslip_analysis(user_id, payslip["filename"], file_hash, 
-                            payslip["extracted_text"], comparison_analysis)
+        meta = {
+            "filename": payslip["filename"],
+            "file_hash": calculate_file_hash(payslip["extracted_text"].encode()),
+            "comparison_analysis": comparison_analysis,
+        }
+        save_payslip(payslip["extracted_text"], meta)
     
     return {
         "success": True,
