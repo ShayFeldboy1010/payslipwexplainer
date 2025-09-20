@@ -17,7 +17,6 @@ import logging
 import os
 import time
 from typing import List
-from concurrent.futures import ThreadPoolExecutor, Future
 
 import fitz  # PyMuPDF
 from ocr import ocr_image_bytes
@@ -29,45 +28,37 @@ log = logging.getLogger(__name__)
 # Configuration knobs.  They keep the extractor responsive and can be tuned via
 # environment variables.
 # ---------------------------------------------------------------------------
-MAX_TOTAL_SECONDS = float(os.getenv("MAX_TOTAL_SECONDS", "20"))
+MAX_TOTAL_SECONDS = float(os.getenv("MAX_TOTAL_SECONDS", "30"))
 
 
 def _extract_pdf(pdf_bytes: bytes) -> str:
     """Extract text from *pdf_bytes* using OCR for image-only pages."""
 
     start = time.perf_counter()
+    page_texts: List[str] = []
+
     with fitz.open(stream=pdf_bytes, filetype="pdf") as doc:
-        texts: List[str] = [""] * doc.page_count
-        ocr_jobs: List[tuple[int, Future[str]]] = []
-
-        with ThreadPoolExecutor() as pool:
-            for index, page in enumerate(doc):
-                if time.perf_counter() - start > MAX_TOTAL_SECONDS:
-                    log.warning("PDF parse timeout at page %s", index)
-                    break
-
-                text = (page.get_text("text") or "").strip()
-                if text:
-                    texts[index] = text
-                    continue
-
-                try:
-                    pix = page.get_pixmap()
-                    ocr_jobs.append((index, pool.submit(ocr_image_bytes, pix.tobytes("png"))))
-                except Exception as exc:  # pragma: no cover - defensive programming
-                    log.warning("OCR enqueue failed for page %s: %s", index, exc)
-
-        for index, fut in ocr_jobs:
-            remaining = MAX_TOTAL_SECONDS - (time.perf_counter() - start)
-            if remaining <= 0:
-                log.warning("OCR timeout while waiting for page %s", index)
+        for index, page in enumerate(doc):
+            # honour a crude timeout to avoid stalling on huge files
+            if time.perf_counter() - start > MAX_TOTAL_SECONDS:
+                log.warning("PDF parse timeout at page %s", index)
                 break
+
+            # First attempt fast text extraction
+            text = (page.get_text("text") or "").strip()
+            if text:
+                page_texts.append(text)
+                continue
+
+            # No text layer – fall back to OCR
             try:
-                texts[index] = fut.result(timeout=remaining)
+                pix = page.get_pixmap()
+                page_texts.append(ocr_image_bytes(pix.tobytes("png")))
             except Exception as exc:  # pragma: no cover - defensive programming
                 log.warning("OCR failed for page %s: %s", index, exc)
+                page_texts.append("")
 
-    return "\n\n".join(t for t in texts if t)
+    return "\n\n".join(t for t in page_texts if t)
 
 
 def extract_text(data: bytes) -> str:
