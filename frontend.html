@@ -3,1039 +3,481 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>TripFlow — עוזרת תכנון טיולים חכמה</title>
+    <title>TripFlow – ניהול טיולים חכם</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;600;700&display=swap');
 
-<!-- Google Fonts performance -->
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-
-<!-- Tailwind (CDN) -->
-<script src="https://cdn.tailwindcss.com"></script>
-
-<!-- Icons -->
-<script src="https://unpkg.com/lucide@latest"></script>
-
-<style>
-  :root {
-    --primary-600: #4338ca;
-    --primary-500: #6366f1;
-    --primary-400: #81a6f8;
-    --accent-500: #06bb64;
-    --emerald-400: #34d399;
-    --slate-900: #0f172a;
-    --slate-700: #334155;
-    --slate-500: #64748b;
-    --slate-200: #e2e8f0;
-    --white-90: rgba(255, 255, 255, 0.9);
-    --glass-bg: rgba(255, 255, 255, 0.82);
-    --glass-border: rgba(99, 102, 241, 0.18);
-    --shadow-xl: 0 30px 80px rgba(15, 23, 42, 0.15);
-    --radius-xl: 28px;
-    color-scheme: dark; /* אם אתה רוצה ברירת מחדל כהה */
-  }
-
-  * { box-sizing: border-box; }
-</style>
-
+        :root {
+            color-scheme: dark;
         }
 
         body {
+            font-family: 'Rubik', sans-serif;
+        }
+
+        .join-code-input::-webkit-outer-spin-button,
+        .join-code-input::-webkit-inner-spin-button {
+            -webkit-appearance: none;
             margin: 0;
-            font-family: 'Rubik', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            background: radial-gradient(circle at 20% -10%, rgba(99, 102, 241, 0.2), rgba(255, 255, 255, 0)),
-                        radial-gradient(circle at 80% 0%, rgba(45, 212, 191, 0.18), rgba(255, 255, 255, 0)),
-                        linear-gradient(180deg, #f6f7ff 0%, #ffffff 55%, #fdf2ff 100%);
-            color: var(--slate-900);
-            min-height: 100vh;
         }
 
-
-        a {
-            color: inherit;
-            text-decoration: none;
-        }
-
-        button,
-        input,
-        select {
-            font-family: inherit;
-        }
-
-        .page {
-            width: min(1180px, 92vw);
-            margin: 0 auto;
-            padding: 42px 0 96px;
-        }
-
-        .top-nav {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 24px;
-            margin-bottom: 54px;
-        }
-
-        .brand {
-            display: flex;
-            align-items: center;
-            gap: 16px;
-        }
-
-        .brand-badge {
-            width: 54px;
-            height: 54px;
-            border-radius: 22px;
-            background: linear-gradient(135deg, rgba(99, 102, 241, 0.12), rgba(129, 140, 248, 0.4));
-            display: grid;
-            place-items: center;
-            color: var(--primary-500);
-            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.65);
-        }
-
-        .brand h1 {
-            margin: 0;
-            font-size: clamp(1.5rem, 1.1vw + 1.4rem, 2.2rem);
-            font-weight: 600;
-        }
-
-        .brand p {
-            margin: 4px 0 0;
-            color: var(--slate-500);
-            font-size: 0.95rem;
-        }
-
-        .nav-actions {
-            display: flex;
-            gap: 12px;
-            flex-wrap: wrap;
-        }
-
-        .ghost-btn,
-        .primary-btn {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            border-radius: 999px;
-            padding: 11px 22px;
-            font-weight: 600;
-            font-size: 0.95rem;
-            cursor: pointer;
-            border: 1px solid transparent;
-            transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.3s ease;
-        }
-
-        .primary-btn {
-            background: linear-gradient(135deg, var(--primary-500), var(--primary-400));
-            color: #fff;
-            box-shadow: 0 20px 40px rgba(99, 102, 241, 0.25);
-        }
-
-        .primary-btn:hover {
-            transform: translateY(-1px);
-        }
-
-        .ghost-btn {
-            background: rgba(255, 255, 255, 0.62);
-            border-color: rgba(99, 102, 241, 0.18);
-            color: var(--primary-500);
-            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.75), 0 12px 25px rgba(15, 23, 42, 0.08);
-        }
-
-        .ghost-btn:hover {
-            transform: translateY(-1px);
-            background: rgba(255, 255, 255, 0.82);
-        }
-
-        .section-kicker {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            padding: 6px 14px;
-            background: rgba(99, 102, 241, 0.12);
-            border-radius: 999px;
-            font-size: 0.82rem;
-            color: var(--primary-500);
-            font-weight: 600;
-        }
-
-        .hero {
-            display: grid;
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-            gap: 38px;
-            padding: 46px;
-            border-radius: var(--radius-xl);
-            background: var(--glass-bg);
-            border: 1px solid var(--glass-border);
-            box-shadow: var(--shadow-xl);
-            position: relative;
-            overflow: hidden;
-        }
-
-        .hero::before,
-        .hero::after {
-            content: "";
-            position: absolute;
-            border-radius: 50%;
-            filter: blur(90px);
-            opacity: 0.55;
-            pointer-events: none;
-        }
-
-        .hero::before {
-            width: 320px;
-            height: 320px;
-            background: rgba(99, 102, 241, 0.25);
-            top: -140px;
-            left: -120px;
-        }
-
-        .hero::after {
-            width: 280px;
-            height: 280px;
-            background: rgba(45, 212, 191, 0.22);
-            bottom: -140px;
-            right: -110px;
-        }
-
-        .hero-copy {
-            position: relative;
-            z-index: 1;
-        }
-
-        .hero-copy h2 {
-            margin: 18px 0 16px;
-            font-size: clamp(2rem, 1.4vw + 2rem, 3rem);
-            line-height: 1.15;
-        }
-
-        .hero-copy p {
-            margin: 0 0 24px;
-            color: var(--slate-500);
-            font-size: 1.02rem;
-            max-width: 460px;
-        }
-
-        .hero-actions {
-            display: flex;
-            gap: 12px;
-            flex-wrap: wrap;
-            margin-bottom: 28px;
-        }
-
-        .hero-stats {
-            display: grid;
-            grid-template-columns: repeat(3, minmax(0, 1fr));
-            gap: 18px;
-        }
-
-        .stat-card {
-            padding: 18px;
-            border-radius: 20px;
-            background: rgba(255, 255, 255, 0.76);
-            border: 1px solid rgba(148, 163, 184, 0.2);
-            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.65);
-        }
-
-        .stat-card strong {
-            display: block;
-            font-size: 1.7rem;
-            color: var(--primary-600);
-            margin-bottom: 4px;
-        }
-
-        .stat-card span {
-            color: var(--slate-500);
-            font-size: 0.9rem;
-        }
-
-        .hero-preview {
-            position: relative;
-            z-index: 1;
-            display: flex;
-            justify-content: flex-end;
-            align-items: stretch;
-        }
-
-        .preview-card {
-            width: min(100%, 410px);
-            border-radius: 26px;
-            background: linear-gradient(180deg, rgba(15, 23, 42, 0.92), rgba(15, 23, 42, 0.78));
-            color: #f8fafc;
-            padding: 26px;
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-            box-shadow: 0 25px 40px rgba(15, 23, 42, 0.35);
-        }
-
-        .preview-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-        }
-
-        .preview-header h3 {
-            margin: 8px 0 0;
-            font-size: 1.5rem;
-        }
-
-        .preview-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            padding: 6px 14px;
-            border-radius: 999px;
-            background: rgba(255, 255, 255, 0.12);
-            font-size: 0.85rem;
-        }
-
-        .preview-stops {
-            display: grid;
-            gap: 16px;
-        }
-
-        .preview-stop {
-            display: flex;
-            gap: 12px;
-            align-items: center;
-        }
-
-        .preview-stop i {
-            width: 36px;
-            height: 36px;
-            border-radius: 12px;
-            display: grid;
-            place-items: center;
-            background: rgba(148, 163, 184, 0.16);
-            color: #cbd5f5;
-        }
-
-        .preview-stop strong {
-            display: block;
-            font-size: 1.05rem;
-        }
-
-        .preview-stop span {
-            font-size: 0.86rem;
-            color: rgba(226, 232, 240, 0.75);
-        }
-
-        .trip-showcase {
-            margin-top: 80px;
-        }
-
-        .section-header {
-            max-width: 620px;
-        }
-
-        .section-header h2 {
-            margin: 18px 0 10px;
-            font-size: clamp(1.8rem, 1vw + 1.8rem, 2.4rem);
-        }
-
-        .section-header p {
-            margin: 0;
-            color: var(--slate-500);
-            font-size: 1rem;
-        }
-
-        .trip-grid {
-            margin-top: 34px;
-            display: grid;
-            grid-template-columns: repeat(3, minmax(0, 1fr));
-            gap: 22px;
-        }
-
-        .trip-card {
-            background: var(--glass-bg);
-            border-radius: 24px;
-            padding: 24px;
-            border: 1px solid rgba(148, 163, 184, 0.2);
-            box-shadow: 0 18px 35px rgba(15, 23, 42, 0.08);
-            display: flex;
-            flex-direction: column;
-            gap: 18px;
-        }
-
-        .trip-card header {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            gap: 12px;
-        }
-
-        .trip-meta {
-            display: grid;
-            gap: 8px;
-            font-size: 0.92rem;
-            color: var(--slate-500);
-        }
-
-        .trip-progress {
-            height: 6px;
-            border-radius: 999px;
-            background: rgba(99, 102, 241, 0.15);
-            overflow: hidden;
-        }
-
-        .trip-progress span {
-            display: block;
-            height: 100%;
-            border-radius: inherit;
-            background: linear-gradient(135deg, var(--primary-500), var(--accent-500));
-        }
-
-        .trip-card footer {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .chip {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            border-radius: 999px;
-            padding: 6px 14px;
-            background: rgba(99, 102, 241, 0.12);
-            color: var(--primary-500);
-            font-size: 0.85rem;
-            border: 1px solid transparent;
-            cursor: default;
-        }
-
-        .planner {
-            margin-top: 80px;
-            display: grid;
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-            gap: 28px;
-        }
-
-        .glass-card {
-            background: var(--glass-bg);
-            border-radius: 26px;
-            padding: 30px;
-            border: 1px solid rgba(148, 163, 184, 0.2);
-            box-shadow: 0 18px 40px rgba(15, 23, 42, 0.1);
-        }
-
-        .create-form {
-            display: grid;
-            gap: 20px;
-        }
-
-        .form-group {
-            display: grid;
-            gap: 10px;
-        }
-
-        .form-row {
-            display: grid;
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-            gap: 18px;
-        }
-
-        label {
-            font-weight: 600;
-            font-size: 0.92rem;
-            color: var(--slate-700);
-        }
-
-        input[type="text"],
-        input[type="date"],
-        input[type="number"] {
-            padding: 12px 16px;
-            border-radius: 14px;
-            border: 1px solid rgba(99, 102, 241, 0.18);
-            background: rgba(255, 255, 255, 0.9);
-            font-size: 0.96rem;
-            transition: border-color 0.2s ease, box-shadow 0.2s ease;
-        }
-
-        input[type="text"]:focus,
-        input[type="date"]:focus,
-        input[type="number"]:focus {
-            outline: none;
-            border-color: var(--primary-500);
-            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.18);
-        }
-
-        input[type="range"] {
-            accent-color: var(--primary-500);
-        }
-
-        .range-field {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .range-field span {
-            min-width: 88px;
-            text-align: center;
-            font-size: 0.9rem;
-            color: var(--primary-500);
-            font-weight: 600;
-        }
-
-        .style-select {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-        }
-
-        .style-select .chip {
-            cursor: pointer;
-            background: rgba(99, 102, 241, 0.08);
-            border-color: transparent;
-            transition: all 0.2s ease;
-        }
-
-        .style-select .chip.selected {
-            background: rgba(99, 102, 241, 0.18);
-            border-color: rgba(99, 102, 241, 0.28);
-            color: var(--primary-600);
-        }
-
-        .primary-btn.full-width {
-            width: 100%;
-            justify-content: center;
-        }
-
-        .trip-preview {
-            margin-top: 10px;
-            background: linear-gradient(180deg, rgba(67, 56, 202, 0.12), rgba(14, 165, 233, 0.12));
-            border: 1px solid rgba(99, 102, 241, 0.25);
-            border-radius: 22px;
-            padding: 24px;
-            display: grid;
-            gap: 16px;
-        }
-
-        .trip-preview header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .preview-details {
-            list-style: none;
-            margin: 0;
-            padding: 0;
-            display: grid;
-            gap: 12px;
-        }
-
-        .preview-details li {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            color: var(--slate-700);
-            font-size: 0.95rem;
-        }
-
-        .preview-details i {
-            width: 28px;
-            height: 28px;
-            border-radius: 10px;
-            display: grid;
-            place-items: center;
-            background: rgba(99, 102, 241, 0.16);
-            color: var(--primary-500);
-        }
-
-        .join-card .join-input {
-            display: flex;
-            gap: 12px;
-            align-items: stretch;
-        }
-
-        .join-card input[type="text"] {
-            flex: 1;
-            font-size: 1.05rem;
-            letter-spacing: 0.12em;
-            text-transform: uppercase;
-        }
-
-        .join-display {
-            margin-top: 12px;
-            font-size: 1.1rem;
-            font-weight: 600;
-            letter-spacing: 0.22em;
-            color: var(--primary-600);
-            background: rgba(99, 102, 241, 0.1);
-            border-radius: 16px;
-            padding: 12px 18px;
-            text-align: center;
-        }
-
-        .invite-list {
-            margin-top: 26px;
-            display: grid;
-            gap: 14px;
-        }
-
-        .invite-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            gap: 16px;
-            padding: 14px 18px;
-            border-radius: 18px;
-            background: rgba(255, 255, 255, 0.72);
-            border: 1px solid rgba(148, 163, 184, 0.18);
-        }
-
-        .invite-item span {
-            display: block;
-            color: var(--slate-500);
-            font-size: 0.9rem;
-        }
-
-        footer {
-            margin-top: 96px;
-            text-align: center;
-            color: var(--slate-500);
-            font-size: 0.85rem;
-        }
-
-        @media (max-width: 1024px) {
-            .hero {
-                grid-template-columns: 1fr;
-                padding: 38px;
-            }
-
-            .hero-preview {
-                justify-content: center;
-            }
-
-            .hero-stats {
-                grid-template-columns: repeat(2, minmax(0, 1fr));
-            }
-
-            .trip-grid {
-                grid-template-columns: repeat(2, minmax(0, 1fr));
-            }
-
-            .planner {
-                grid-template-columns: 1fr;
-            }
-        }
-
-        @media (max-width: 680px) {
-            .top-nav {
-                flex-direction: column;
-                align-items: flex-start;
-            }
-
-            .hero {
-                padding: 30px 26px;
-            }
-
-            .hero-stats {
-                grid-template-columns: 1fr;
-            }
-
-            .trip-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .form-row {
-                grid-template-columns: 1fr;
-            }
-
-            .join-card .join-input {
-                flex-direction: column;
-            }
-
-            .primary-btn,
-            .ghost-btn {
-                width: 100%;
-            }
+        .join-code-input[type=number] {
+            -moz-appearance: textfield;
         }
     </style>
 </head>
-<body>
-    <div class="page">
-        <header class="top-nav">
-            <div class="brand">
-                <div class="brand-badge">
-                    <i data-lucide="mountain" class="w-6 h-6"></i>
-                </div>
-                <div>
-                    <h1>TripFlow</h1>
-                    <p>הדרך החכמה לתאם טיולים קבוצתיים</p>
-                </div>
-            </div>
-            <div class="nav-actions">
-                <button class="ghost-btn"><i data-lucide="sparkles"></i> איך זה עובד?</button>
-                <button class="ghost-btn"><i data-lucide="compass"></i> טיולים פתוחים</button>
-                <button class="primary-btn"><i data-lucide="plus"></i> צור טיול חדש</button>
-            </div>
-        </header>
+<body class="bg-slate-950 text-slate-100 min-h-screen relative overflow-hidden">
+    <div class="pointer-events-none absolute inset-0">
+        <div class="absolute -top-44 right-[-10%] h-[28rem] w-[28rem] rounded-full bg-blue-500/40 blur-[150px]"></div>
+        <div class="absolute top-1/3 left-[-18%] h-[22rem] w-[22rem] rounded-full bg-purple-500/30 blur-[160px]"></div>
+        <div class="absolute bottom-[-25%] right-[-5%] h-[26rem] w-[26rem] rounded-full bg-emerald-500/25 blur-[160px]"></div>
+    </div>
 
-        <main>
-            <section class="hero">
-                <div class="hero-copy">
-                    <span class="section-kicker"><i data-lucide="sparkles"></i> חדש ב-TripFlow</span>
-                    <h2>כל תכנון טיול הופך לסיפור שמתחיל בקליק אחד</h2>
-                    <p>חברו את כל החבורה, הגדירו תקציבים והעדפות, וקבלו מסלול חכם שמתעדכן בזמן אמת. TripFlow הופך כאבי ראש לשרטוט מדויק של חלום משותף.</p>
-                    <div class="hero-actions">
-                        <button class="primary-btn"><i data-lucide="plane"></i> התחלת תכנון</button>
-                        <button class="ghost-btn"><i data-lucide="play"></i> צפייה בתצוגה מקדימה</button>
+    <div class="relative z-10">
+        <div class="mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:px-8">
+            <header class="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
+                <div class="flex items-center gap-4">
+                    <div class="grid h-14 w-14 place-items-center rounded-3xl border border-blue-500/30 bg-blue-500/10 text-blue-200 shadow-lg shadow-blue-500/20">
+                        <i data-lucide="compass" class="h-6 w-6"></i>
                     </div>
-                    <div class="hero-stats">
-                        <div class="stat-card">
-                            <strong>128</strong>
-                            <span>טיולים פעילים השבוע</span>
-                        </div>
-                        <div class="stat-card">
-                            <strong>4,620</strong>
-                            <span>מטיילים מתאמים יחד</span>
-                        </div>
-                        <div class="stat-card">
-                            <strong>92%</strong>
-                            <span>אמרו שהחיסכון גדל</span>
-                        </div>
+                    <div>
+                        <p class="text-sm uppercase tracking-[0.35em] text-blue-200/60">TripFlow</p>
+                        <h1 class="mt-1 text-2xl font-semibold text-white sm:text-3xl">המסע המשותף שלך מתחיל כאן</h1>
+                        <p class="mt-2 text-sm text-slate-400">נהל הוצאות, חלק משימות ותכנן את החוויה המושלמת לכל חברי הקבוצה.</p>
                     </div>
                 </div>
-                <div class="hero-preview">
-                    <div class="preview-card">
-                        <div class="preview-header">
-                            <div>
-                                <span class="preview-badge"><i data-lucide="users"></i> הקבוצה של מאיה</span>
-                                <h3>חופי אמלפי</h3>
-                                <span style="color: rgba(226,232,240,0.75); font-size: 0.9rem;">14 - 20 בספטמבר · 6 חברים</span>
-                            </div>
-                            <i data-lucide="waves" style="opacity: 0.85;"></i>
-                        </div>
-                        <div class="preview-stops">
-                            <div class="preview-stop">
-                                <i data-lucide="sun"></i>
-                                <div>
-                                    <strong>Positano</strong>
-                                    <span>בוקר חופים + שיט פרטי</span>
-                                </div>
-                            </div>
-                            <div class="preview-stop">
-                                <i data-lucide="mountain"></i>
-                                <div>
-                                    <strong>Ravello</strong>
-                                    <span>סיור כרמים וגינה מוזיקלית</span>
-                                </div>
-                            </div>
-                            <div class="preview-stop">
-                                <i data-lucide="sparkles"></i>
-                                <div>
-                                    <strong>Amalfi by Night</strong>
-                                    <span>טעימות ליים וקוקטייל שקיעה</span>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="preview-stops">
-                            <div class="preview-stop">
-                                <i data-lucide="wallet"></i>
-                                <div>
-                                    <strong>תקציב נשאר</strong>
-                                    <span>₪2,480 מתוך ₪14,400</span>
-                                </div>
-                            </div>
-                            <div class="preview-stop">
-                                <i data-lucide="check-circle"></i>
-                                <div>
-                                    <strong>משימות</strong>
-                                    <span>טיסות הושלמו · מלון בבחינה</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                <div class="flex flex-wrap items-center gap-3">
+                    <button class="hidden rounded-2xl border border-white/10 bg-white/5 px-5 py-3 text-sm font-medium text-white/80 backdrop-blur transition hover:border-white/30 hover:text-white/95 sm:inline-flex sm:items-center sm:gap-2">
+                        <i data-lucide="bell" class="h-4 w-4"></i>
+                        מרכז התראות
+                    </button>
+                    <button class="inline-flex items-center gap-2 rounded-2xl bg-blue-500 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-blue-500/30 transition hover:bg-blue-400">
+                        <i data-lucide="plus" class="h-4 w-4"></i>
+                        התחלת טיול חדש
+                    </button>
                 </div>
-            </section>
+            </header>
 
-            <section class="trip-showcase">
-                <div class="section-header">
-                    <span class="section-kicker"><i data-lucide="globe-2"></i> טיולי הקהילה</span>
-                    <h2>בחרו את ההרפתקה הבאה והצטרפו בכמה שניות</h2>
-                    <p>הטיולים הפופולריים של השבוע מוצגים עם התקדמות, תקציב וזמן יציאה מדויק. הכניסה לקבוצה מתבצעת בלחיצה אחת.</p>
-                </div>
-                <div class="trip-grid">
-                    <article class="trip-card">
-                        <header>
-                            <div>
-                                <h3 style="margin: 0; font-size: 1.3rem;">הרי הדולומיטים</h3>
-                                <span class="chip"><i data-lucide="compass"></i> טיול מודרך</span>
+            <main class="mt-10 space-y-10">
+                <section class="relative overflow-hidden rounded-[2.5rem] border border-white/10 bg-gradient-to-br from-blue-600/40 via-blue-500/10 to-slate-900/60 p-8 shadow-2xl shadow-blue-900/40 backdrop-blur-xl sm:p-10">
+                    <div class="grid gap-8 md:grid-cols-[1.1fr,0.9fr] md:items-center">
+                        <div>
+                            <span class="inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.35em] text-blue-100/80">
+                                <span class="h-2 w-2 rounded-full bg-emerald-400"></span>
+                                לוח זמנים חי
+                            </span>
+                            <h2 class="mt-6 text-3xl font-semibold leading-tight text-white sm:text-4xl">תכנן את הטיול הבא שלך בעיצוב מודרני ונקי</h2>
+                            <p class="mt-4 max-w-xl text-sm leading-relaxed text-blue-100/80">TripFlow מרכז עבורך את כל הטיולים במקום אחד – מהתכנון ועד סיכום ההוצאות. צור טיולים חדשים, נהל את הפרטים הקטנים והזמן חברים להצטרף במהירות.</p>
+                            <div class="mt-6 flex flex-wrap gap-3">
+                                <button class="inline-flex items-center gap-2 rounded-2xl bg-white px-6 py-3 text-sm font-semibold text-slate-900 shadow-lg shadow-white/30 transition hover:bg-slate-100">
+                                    <i data-lucide="play" class="h-4 w-4"></i>
+                                    המשך לטיול האחרון
+                                </button>
+                                <button class="inline-flex items-center gap-2 rounded-2xl border border-white/30 bg-white/5 px-6 py-3 text-sm font-medium text-white/80 backdrop-blur transition hover:border-white/60 hover:text-white">
+                                    <i data-lucide="share-2" class="h-4 w-4"></i>
+                                    שתף עם חברים
+                                </button>
                             </div>
-                            <span style="color: var(--primary-500); font-weight: 600;">נותרו 2 מקומות</span>
-                        </header>
-                        <div class="trip-meta">
-                            <span><i data-lucide="calendar"></i> 4 - 10 באוגוסט · 7 ימים</span>
-                            <span><i data-lucide="users"></i> 8 משתתפים · 2 מדריכים</span>
-                            <span><i data-lucide="wallet"></i> ₪3,900 למטייל</span>
+                            <dl class="mt-8 grid gap-4 text-sm text-blue-100/80 sm:grid-cols-3">
+                                <div class="rounded-2xl border border-white/15 bg-white/5 p-4">
+                                    <dt class="text-xs uppercase tracking-widest text-blue-200/70">טיולים פעילים</dt>
+                                    <dd class="mt-2 text-2xl font-semibold text-white">3</dd>
+                                    <span class="text-xs text-blue-100/60">משותפים השבוע</span>
+                                </div>
+                                <div class="rounded-2xl border border-white/15 bg-white/5 p-4">
+                                    <dt class="text-xs uppercase tracking-widest text-blue-200/70">חברים שיתפו</dt>
+                                    <dd class="mt-2 text-2xl font-semibold text-white">18</dd>
+                                    <span class="text-xs text-blue-100/60">מצטרפים חדשים</span>
+                                </div>
+                                <div class="rounded-2xl border border-white/15 bg-white/5 p-4">
+                                    <dt class="text-xs uppercase tracking-widest text-blue-200/70">הוצאות מנוהלות</dt>
+                                    <dd class="mt-2 text-2xl font-semibold text-white">₪12,450</dd>
+                                    <span class="text-xs text-blue-100/60">בשלושת החודשים האחרונים</span>
+                                </div>
+                            </dl>
                         </div>
-                        <div class="trip-progress"><span style="width: 78%;"></span></div>
-                        <footer>
-                            <span style="color: var(--slate-500); font-size: 0.9rem;">מתחילים בתדרוך אונליין</span>
-                            <button class="ghost-btn"><i data-lucide="log-in"></i> הצטרפות</button>
-                        </footer>
-                    </article>
-                    <article class="trip-card">
-                        <header>
-                            <div>
-                                <h3 style="margin: 0; font-size: 1.3rem;">סיאול וקיוטו</h3>
-                                <span class="chip"><i data-lucide="sparkles"></i> קולינריה ותרבות</span>
+                        <div class="relative">
+                            <div class="absolute -top-10 left-6 h-32 w-32 rounded-full bg-blue-400/30 blur-3xl"></div>
+                            <div class="absolute -bottom-12 right-0 h-28 w-28 rounded-full bg-purple-500/30 blur-3xl"></div>
+                            <div class="relative overflow-hidden rounded-3xl border border-white/10 bg-slate-900/70 p-6 shadow-xl backdrop-blur-xl">
+                                <div class="flex items-center justify-between text-xs text-blue-100/80">
+                                    <span class="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1">
+                                        <i data-lucide="map-pin" class="h-4 w-4"></i>
+                                        גליל מערבי
+                                    </span>
+                                    <span>10.08.2025</span>
+                                </div>
+                                <h3 class="mt-4 text-xl font-semibold text-white">חופשת גליל קסומה</h3>
+                                <p class="mt-2 text-sm text-slate-400">נוף ירוק, ארוחות משותפות ומסלולי מים מרעננים. הכל נמצא במקום אחד.</p>
+                                <div class="mt-6 grid gap-4 text-sm text-slate-300 sm:grid-cols-2">
+                                    <div>
+                                        <p class="text-xs text-slate-400">משתתפים</p>
+                                        <div class="mt-3 flex -space-x-3 rtl:space-x-reverse">
+                                            <span class="grid h-9 w-9 place-items-center rounded-full border border-slate-800 bg-slate-700 text-xs font-semibold text-white">שי</span>
+                                            <span class="grid h-9 w-9 place-items-center rounded-full border border-slate-800 bg-blue-600 text-xs font-semibold text-white">הילה</span>
+                                            <span class="grid h-9 w-9 place-items-center rounded-full border border-slate-800 bg-emerald-600 text-xs font-semibold text-white">גיא</span>
+                                        </div>
+                                    </div>
+                                    <div class="text-right">
+                                        <p class="text-xs text-slate-400">הוצאה משוערת</p>
+                                        <p class="mt-3 text-lg font-semibold text-emerald-300">₪2,940</p>
+                                    </div>
+                                </div>
+                                <div class="mt-6 flex items-center justify-between rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-xs text-blue-100/80">
+                                    <div class="flex items-center gap-2">
+                                        <i data-lucide="sparkles" class="h-4 w-4 text-blue-200"></i>
+                                        <span>משימות יומיומיות מסונכרנות</span>
+                                    </div>
+                                    <span class="rounded-full bg-blue-500/20 px-3 py-1 text-[0.65rem] font-semibold text-blue-100">LIVE</span>
+                                </div>
                             </div>
-                            <span style="color: var(--emerald-400); font-weight: 600;">הצצה ראשונה</span>
-                        </header>
-                        <div class="trip-meta">
-                            <span><i data-lucide="calendar"></i> 19 - 28 באוקטובר · 10 ימים</span>
-                            <span><i data-lucide="users"></i> 6 משתתפים · גג 10</span>
-                            <span><i data-lucide="wallet"></i> ₪5,400 למטייל</span>
                         </div>
-                        <div class="trip-progress"><span style="width: 46%;"></span></div>
-                        <footer>
-                            <span style="color: var(--slate-500); font-size: 0.9rem;">ההצבעה על מסעדות השבוע</span>
-                            <button class="ghost-btn"><i data-lucide="arrow-right"></i> גלו עוד</button>
-                        </footer>
-                    </article>
-                    <article class="trip-card">
-                        <header>
-                            <div>
-                                <h3 style="margin: 0; font-size: 1.3rem;">מדבר יהודה בלילה</h3>
-                                <span class="chip"><i data-lucide="moon"></i> חוויית גלמפינג</span>
+                    </div>
+                </section>
+                <section class="rounded-[2.25rem] border border-white/5 bg-slate-900/60 p-6 shadow-xl shadow-slate-950/40 backdrop-blur-xl sm:p-8">
+                    <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                        <div>
+                            <h2 class="text-2xl font-semibold text-white">טיולים אחרונים</h2>
+                            <p class="mt-2 text-sm text-slate-400">חזור במהירות לטיולים האחרונים שלך וצפה בעדכונים מהקבוצות.</p>
+                        </div>
+                        <div class="flex flex-wrap items-center gap-3">
+                            <button class="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-5 py-2.5 text-sm font-medium text-white/80 transition hover:border-white/40 hover:text-white">
+                                <i data-lucide="rows" class="h-4 w-4"></i>
+                                הצג הכל
+                            </button>
+                            <button class="inline-flex items-center gap-2 rounded-full bg-blue-500/90 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-400">
+                                <i data-lucide="history" class="h-4 w-4"></i>
+                                המשך לטיול האחרון
+                            </button>
+                        </div>
+                    </div>
+                    <div class="mt-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                        <article class="group relative overflow-hidden rounded-3xl border border-white/10 bg-slate-900/60 p-6 shadow-lg transition hover:-translate-y-1 hover:border-blue-400/60">
+                            <div class="flex items-center justify-between text-xs text-slate-400">
+                                <span class="inline-flex items-center gap-1 rounded-full bg-blue-500/10 px-3 py-1 text-blue-200">
+                                    <i data-lucide="map" class="h-4 w-4"></i>
+                                    גליל עליון
+                                </span>
+                                <span>12.04.2025</span>
                             </div>
-                            <span style="color: var(--primary-500); font-weight: 600;">זמין להצטרפות</span>
-                        </header>
-                        <div class="trip-meta">
-                            <span><i data-lucide="calendar"></i> 1 - 2 בנובמבר · סופ"ש</span>
-                            <span><i data-lucide="users"></i> 12 משתתפים · מלא 60%</span>
-                            <span><i data-lucide="wallet"></i> ₪1,280 למטייל</span>
+                            <h3 class="mt-4 text-lg font-semibold text-white">סופ״ש יין בצפון</h3>
+                            <p class="mt-2 text-sm leading-relaxed text-slate-400">יקבים, ספא וטיולי טבע רגועים במשך סוף שבוע מפנק עם החברים.</p>
+                            <div class="mt-6 flex items-center justify-between text-sm text-slate-300">
+                                <div class="flex items-center gap-2">
+                                    <div class="flex -space-x-2 rtl:space-x-reverse">
+                                        <span class="grid h-8 w-8 place-items-center rounded-full border border-slate-800 bg-slate-700 text-[0.7rem] font-medium text-white">אב</span>
+                                        <span class="grid h-8 w-8 place-items-center rounded-full border border-slate-800 bg-blue-600 text-[0.7rem] font-medium text-white">דנ</span>
+                                        <span class="grid h-8 w-8 place-items-center rounded-full border border-slate-800 bg-emerald-600 text-[0.7rem] font-medium text-white">מע</span>
+                                    </div>
+                                    <span class="text-xs text-slate-400">5 משתתפים</span>
+                                </div>
+                                <span class="text-sm font-semibold text-emerald-300">₪3,420</span>
+                            </div>
+                            <button class="mt-6 flex w-full items-center justify-center gap-2 rounded-2xl bg-white/5 px-4 py-3 text-sm font-medium text-white transition hover:bg-blue-500/80 hover:text-white">
+                                <i data-lucide="arrow-up-right" class="h-4 w-4"></i>
+                                פתח טיול
+                            </button>
+                        </article>
+                        <article class="group relative overflow-hidden rounded-3xl border border-white/10 bg-slate-900/60 p-6 shadow-lg transition hover:-translate-y-1 hover:border-emerald-400/60">
+                            <div class="flex items-center justify-between text-xs text-slate-400">
+                                <span class="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-3 py-1 text-emerald-200">
+                                    <i data-lucide="trees" class="h-4 w-4"></i>
+                                    רמת הגולן
+                                </span>
+                                <span>28.05.2025</span>
+                            </div>
+                            <h3 class="mt-4 text-lg font-semibold text-white">טיול שטח וחוויות</h3>
+                            <p class="mt-2 text-sm leading-relaxed text-slate-400">מסלולי ג׳יפים, מעיינות חמים וארוחות משותפות מסביב למדורה.</p>
+                            <div class="mt-6 flex items-center justify-between text-sm text-slate-300">
+                                <div class="flex items-center gap-2">
+                                    <div class="flex -space-x-2 rtl:space-x-reverse">
+                                        <span class="grid h-8 w-8 place-items-center rounded-full border border-slate-800 bg-slate-700 text-[0.7rem] font-medium text-white">ליה</span>
+                                        <span class="grid h-8 w-8 place-items-center rounded-full border border-slate-800 bg-indigo-600 text-[0.7rem] font-medium text-white">שי</span>
+                                        <span class="grid h-8 w-8 place-items-center rounded-full border border-slate-800 bg-emerald-600 text-[0.7rem] font-medium text-white">עיד</span>
+                                    </div>
+                                    <span class="text-xs text-slate-400">6 משתתפים</span>
+                                </div>
+                                <span class="text-sm font-semibold text-emerald-300">₪5,870</span>
+                            </div>
+                            <button class="mt-6 flex w-full items-center justify-center gap-2 rounded-2xl bg-white/5 px-4 py-3 text-sm font-medium text-white transition hover:bg-emerald-500/80 hover:text-white">
+                                <i data-lucide="arrow-up-right" class="h-4 w-4"></i>
+                                פתח טיול
+                            </button>
+                        </article>
+                        <article class="group relative overflow-hidden rounded-3xl border border-white/10 bg-slate-900/60 p-6 shadow-lg transition hover:-translate-y-1 hover:border-purple-400/60">
+                            <div class="flex items-center justify-between text-xs text-slate-400">
+                                <span class="inline-flex items-center gap-1 rounded-full bg-purple-500/10 px-3 py-1 text-purple-200">
+                                    <i data-lucide="sun" class="h-4 w-4"></i>
+                                    אילת וים סוף
+                                </span>
+                                <span>03.06.2025</span>
+                            </div>
+                            <h3 class="mt-4 text-lg font-semibold text-white">חופשה משפחתית מפנקת</h3>
+                            <p class="mt-2 text-sm leading-relaxed text-slate-400">אטרקציות, ארוחות משותפות וחוויות בלתי נשכחות בעיר הנופש של ישראל.</p>
+                            <div class="mt-6 flex items-center justify-between text-sm text-slate-300">
+                                <div class="flex items-center gap-2">
+                                    <div class="flex -space-x-2 rtl:space-x-reverse">
+                                        <span class="grid h-8 w-8 place-items-center rounded-full border border-slate-800 bg-slate-700 text-[0.7rem] font-medium text-white">מא</span>
+                                        <span class="grid h-8 w-8 place-items-center rounded-full border border-slate-800 bg-blue-600 text-[0.7rem] font-medium text-white">גא</span>
+                                        <span class="grid h-8 w-8 place-items-center rounded-full border border-slate-800 bg-rose-600 text-[0.7rem] font-medium text-white">ליא</span>
+                                    </div>
+                                    <span class="text-xs text-slate-400">8 משתתפים</span>
+                                </div>
+                                <span class="text-sm font-semibold text-emerald-300">₪7,320</span>
+                            </div>
+                            <button class="mt-6 flex w-full items-center justify-center gap-2 rounded-2xl bg-white/5 px-4 py-3 text-sm font-medium text-white transition hover:bg-purple-500/80 hover:text-white">
+                                <i data-lucide="arrow-up-right" class="h-4 w-4"></i>
+                                פתח טיול
+                            </button>
+                        </article>
+                    </div>
+                </section>
+                <section class="grid gap-6 lg:grid-cols-[minmax(0,1.1fr),minmax(0,0.9fr)]">
+                    <div class="relative overflow-hidden rounded-[2.25rem] border border-white/10 bg-gradient-to-br from-blue-600/80 via-indigo-600/70 to-slate-900/60 p-8 shadow-2xl shadow-blue-900/50">
+                        <div class="absolute -top-10 left-10 h-28 w-28 rounded-full bg-white/10 blur-2xl"></div>
+                        <div class="absolute inset-x-8 bottom-0 h-24 rounded-full bg-blue-500/30 blur-3xl"></div>
+                        <div class="relative z-10">
+                            <span class="inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.35em] text-blue-100/80">
+                                <i data-lucide="sparkles" class="h-4 w-4"></i>
+                                יצירת טיול
+                            </span>
+                            <h2 class="mt-4 text-2xl font-semibold text-white">חוויית יצירה ידידותית ואלגנטית</h2>
+                            <p class="mt-3 max-w-xl text-sm text-blue-100/80">ספר לנו על היעד והאווירה. נייצר עבורך קוד שיתוף, נצור משימות ונעדכן את התקציב עוד לפני שהטיול מתחיל.</p>
+                            <form id="create-trip-form" class="mt-6 space-y-5">
+                                <label class="block text-sm font-medium text-blue-100/80">
+                                    שם הטיול
+                                    <div class="relative mt-2">
+                                        <i data-lucide="pen" class="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-blue-100/70"></i>
+                                        <input id="trip-name" type="text" placeholder="לדוגמה: בריחה לגליל" class="w-full rounded-2xl border border-white/20 bg-white/15 px-5 py-3 text-sm text-white placeholder:text-white/50 shadow-inner shadow-blue-900/50 outline-none transition focus:border-white/60 focus:bg-white/20" required>
+                                    </div>
+                                </label>
+                                <div class="grid gap-4 sm:grid-cols-2">
+                                    <label class="block text-sm font-medium text-blue-100/80">
+                                        תאריך התחלה
+                                        <div class="relative mt-2">
+                                            <i data-lucide="calendar" class="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-blue-100/70"></i>
+                                            <input id="trip-date" type="date" class="w-full rounded-2xl border border-white/20 bg-white/15 px-5 py-3 text-sm text-white shadow-inner shadow-blue-900/50 outline-none transition focus:border-white/60 focus:bg-white/20" required>
+                                        </div>
+                                    </label>
+                                    <label class="block text-sm font-medium text-blue-100/80">
+                                        תקציב ראשוני (אופציונלי)
+                                        <div class="relative mt-2">
+                                            <i data-lucide="wallet" class="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-blue-100/70"></i>
+                                            <input id="trip-budget" type="number" inputmode="numeric" min="0" placeholder="₪ 3,000" class="w-full rounded-2xl border border-white/20 bg-white/15 px-5 py-3 text-sm text-white placeholder:text-white/50 shadow-inner shadow-blue-900/50 outline-none transition focus:border-white/60 focus:bg-white/20">
+                                        </div>
+                                    </label>
+                                </div>
+                                <label class="block text-sm font-medium text-blue-100/80">
+                                    תיאור קצר
+                                    <div class="relative mt-2">
+                                        <textarea id="trip-description" rows="3" placeholder="מה הופך את הטיול הזה למיוחד?" class="w-full rounded-2xl border border-white/20 bg-white/15 px-5 py-3 text-sm text-white placeholder:text-white/50 shadow-inner shadow-blue-900/50 outline-none transition focus:border-white/60 focus:bg-white/20"></textarea>
+                                    </div>
+                                </label>
+                                <div class="grid gap-4 lg:grid-cols-[minmax(0,1fr),220px] lg:items-start">
+                                    <button type="submit" class="flex items-center justify-center gap-2 rounded-2xl bg-white px-6 py-3 text-sm font-semibold text-slate-900 shadow-lg shadow-white/40 transition hover:bg-slate-100">
+                                        <i data-lucide="rocket" class="h-4 w-4"></i>
+                                        צור טיול מרגש
+                                    </button>
+                                    <div class="rounded-2xl border border-white/20 bg-white/10 p-4 text-sm text-blue-100/80">
+                                        <p class="text-xs uppercase tracking-[0.3em] text-blue-200/70">תצוגה מקדימה</p>
+                                        <h3 id="trip-preview-title" class="mt-3 text-lg font-semibold text-white">טיול ללא שם</h3>
+                                        <p class="mt-2 flex items-center gap-2 text-xs text-blue-100/70">
+                                            <i data-lucide="clock" class="h-4 w-4"></i>
+                                            <span id="trip-preview-date">בחר תאריך</span>
+                                        </p>
+                                        <p id="trip-preview-note" class="mt-3 text-xs leading-relaxed text-blue-50/80">הוסף כמה מילים כדי לספר לחברים למה לצפות בטיול הבא שלכם.</p>
+                                    </div>
+                                </div>
+                                <div id="create-feedback" class="rounded-2xl bg-emerald-500/10 px-5 py-3 text-sm font-medium text-emerald-200 opacity-0 transition-opacity"></div>
+                            </form>
                         </div>
-                        <div class="trip-progress"><span style="width: 60%;"></span></div>
-                        <footer>
-                            <span style="color: var(--slate-500); font-size: 0.9rem;">כולל מופע אסטרונומיה</span>
-                            <button class="ghost-btn"><i data-lucide="log-in"></i> הזמנת מקום</button>
-                        </footer>
-                    </article>
-                </div>
-            </section>
+                    </div>
 
-            <section class="planner">
-                <div class="glass-card">
-                    <span class="section-kicker"><i data-lucide="pencil"></i> יצירת טיול</span>
-                    <h3 style="margin: 16px 0 18px; font-size: 1.6rem;">הגדירו את היעד וראו תצוגה חיה</h3>
-                    <form class="create-form" autocomplete="off">
-                        <div class="form-group">
-                            <label for="create-destination">לאן נוסעים?</label>
-                            <input type="text" id="create-destination" value="ליסבון, פורטוגל" placeholder="שם היעד">
-                        </div>
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="create-date">תאריך יציאה</label>
-                                <input type="date" id="create-date" value="2025-06-15">
-                            </div>
-                            <div class="form-group">
-                                <label for="create-days">משך (ימים)</label>
-                                <div class="range-field">
-                                    <input type="range" id="create-days" min="3" max="14" value="6">
-                                    <span id="days-output">6 ימים</span>
+                    <div class="relative overflow-hidden rounded-[2.25rem] border border-white/10 bg-slate-900/70 p-8 shadow-2xl shadow-slate-950/40">
+                        <div class="absolute -top-12 right-8 h-28 w-28 rounded-full bg-emerald-500/20 blur-3xl"></div>
+                        <div class="absolute inset-x-6 bottom-0 h-28 rounded-full bg-blue-500/10 blur-2xl"></div>
+                        <div class="relative z-10">
+                            <span class="inline-flex items-center gap-2 rounded-full bg-white/5 px-4 py-2 text-xs font-semibold uppercase tracking-[0.35em] text-slate-200/80">
+                                <i data-lucide="users" class="h-4 w-4"></i>
+                                הצטרפות לטיול
+                            </span>
+                            <h2 class="mt-4 text-2xl font-semibold text-white">הצטרפות אלגנטית לטיול קיים</h2>
+                            <p class="mt-3 text-sm text-slate-400">קיבלת קוד? הזן אותו כאן והצטרף מיידית לטיול החברים. אין צורך בהרשמה מחדש.</p>
+                            <form id="join-trip-form" class="mt-6 space-y-6">
+                                <div>
+                                    <p class="text-xs font-medium uppercase tracking-[0.25em] text-slate-400">קוד טיול</p>
+                                    <div dir="ltr" class="mt-3 flex items-center justify-between gap-2">
+                                        <input class="join-code-input h-14 w-12 rounded-2xl border border-white/15 bg-slate-800/60 text-center text-lg font-semibold tracking-widest text-white shadow-inner shadow-slate-950/60 outline-none transition focus:border-blue-400/80 focus:bg-slate-900 focus:ring-2 focus:ring-blue-400/50" maxlength="1" inputmode="text" autocomplete="one-time-code">
+                                        <input class="join-code-input h-14 w-12 rounded-2xl border border-white/15 bg-slate-800/60 text-center text-lg font-semibold tracking-widest text-white shadow-inner shadow-slate-950/60 outline-none transition focus:border-blue-400/80 focus:bg-slate-900 focus:ring-2 focus:ring-blue-400/50" maxlength="1" inputmode="text" autocomplete="one-time-code">
+                                        <input class="join-code-input h-14 w-12 rounded-2xl border border-white/15 bg-slate-800/60 text-center text-lg font-semibold tracking-widest text-white shadow-inner shadow-slate-950/60 outline-none transition focus:border-blue-400/80 focus:bg-slate-900 focus:ring-2 focus:ring-blue-400/50" maxlength="1" inputmode="text" autocomplete="one-time-code">
+                                        <input class="join-code-input h-14 w-12 rounded-2xl border border-white/15 bg-slate-800/60 text-center text-lg font-semibold tracking-widest text-white shadow-inner shadow-slate-950/60 outline-none transition focus:border-blue-400/80 focus:bg-slate-900 focus:ring-2 focus:ring-blue-400/50" maxlength="1" inputmode="text" autocomplete="one-time-code">
+                                        <input class="join-code-input h-14 w-12 rounded-2xl border border-white/15 bg-slate-800/60 text-center text-lg font-semibold tracking-widest text-white shadow-inner shadow-slate-950/60 outline-none transition focus:border-blue-400/80 focus:bg-slate-900 focus:ring-2 focus:ring-blue-400/50" maxlength="1" inputmode="text" autocomplete="one-time-code">
+                                        <input class="join-code-input h-14 w-12 rounded-2xl border border-white/15 bg-slate-800/60 text-center text-lg font-semibold tracking-widest text-white shadow-inner shadow-slate-950/60 outline-none transition focus:border-blue-400/80 focus:bg-slate-900 focus:ring-2 focus:ring-blue-400/50" maxlength="1" inputmode="text" autocomplete="one-time-code">
+                                    </div>
+                                    <button id="join-paste-btn" type="button" class="mt-3 inline-flex items-center gap-2 text-xs font-medium text-blue-200/80 transition hover:text-blue-100">
+                                        <i data-lucide="clipboard-paste" class="h-4 w-4"></i>
+                                        הדבק קוד מהלוח
+                                    </button>
                                 </div>
-                            </div>
-                        </div>
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="create-travelers">מספר משתתפים</label>
-                                <div class="range-field">
-                                    <input type="range" id="create-travelers" min="2" max="12" value="4">
-                                    <span id="travelers-output">4 חברים</span>
+                                <div class="space-y-3">
+                                    <p class="text-xs font-medium uppercase tracking-[0.3em] text-slate-400">תצוגה מקדימה</p>
+                                    <div dir="ltr" class="flex items-center justify-between rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white">
+                                        <div class="inline-flex items-center gap-2 text-blue-200/80">
+                                            <i data-lucide="key" class="h-4 w-4"></i>
+                                            קוד שיתוף
+                                        </div>
+                                        <span id="join-code-preview" class="font-mono text-lg tracking-[0.45em] text-white/90">———</span>
+                                    </div>
                                 </div>
-                            </div>
-                            <div class="form-group">
-                                <label for="create-budget">תקציב לכל מטייל</label>
-                                <div class="range-field">
-                                    <input type="range" id="create-budget" min="900" max="6500" step="100" value="3200">
-                                    <span id="budget-output">₪3,200</span>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="form-group">
-                            <label>סגנון הטיול</label>
-                            <div class="style-select">
-                                <button type="button" class="chip selected" data-style="הרפתקה מודרכת">הרפתקה מודרכת</button>
-                                <button type="button" class="chip" data-style="חופשה רגועה">חופשה רגועה</button>
-                                <button type="button" class="chip" data-style="סופשבוע קולינרי">סופשבוע קולינרי</button>
-                                <button type="button" class="chip" data-style="מסע משפחתי">מסע משפחתי</button>
-                            </div>
-                        </div>
-                        <button type="button" class="primary-btn full-width"><i data-lucide="send"></i> שיתוף התכנון עם הקבוצה</button>
-                    </form>
-                    <div class="trip-preview">
-                        <header>
-                            <div>
-                                <span class="chip" style="background: rgba(99,102,241,0.16);">טיול קבוצתי</span>
-                                <h4 id="preview-destination" style="margin: 10px 0 0; font-size: 1.4rem;">ליסבון, פורטוגל</h4>
-                            </div>
-                            <span id="preview-style" class="chip">הרפתקה מודרכת</span>
-                        </header>
-                        <ul class="preview-details">
-                            <li><i data-lucide="calendar"></i><span id="preview-dates">15 – 20 ביוני 2025 · 6 ימים</span></li>
-                            <li><i data-lucide="users"></i><span id="preview-travelers">4 חברים</span></li>
-                            <li><i data-lucide="wallet"></i><span id="preview-budget">₪3,200 למטייל</span></li>
-                        </ul>
-                        <div style="display: flex; align-items: center; gap: 12px; font-size: 0.9rem; color: var(--slate-500);">
-                            <i data-lucide="sparkles"></i>
-                            <span>TripFlow מייצר עבורכם מסלול מותאם + פעילויות שמתאימות לכל החבורה.</span>
+                                <button type="submit" class="flex w-full items-center justify-center gap-2 rounded-2xl bg-emerald-500/90 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-emerald-500/30 transition hover:bg-emerald-400">
+                                    <i data-lucide="log-in" class="h-4 w-4"></i>
+                                    הצטרף לטיול
+                                </button>
+                                <div id="join-feedback" class="rounded-2xl px-4 py-3 text-sm font-medium opacity-0 transition-all"></div>
+                            </form>
+                            <p class="mt-6 text-xs text-slate-500">ניתן גם לשתף קישור ישיר לחברים – הוא יעבוד בדיוק כמו קוד ההזמנה.</p>
                         </div>
                     </div>
-                </div>
-                <div class="glass-card join-card">
-                    <span class="section-kicker"><i data-lucide="door-open"></i> הצטרפות מהירה</span>
-                    <h3 style="margin: 16px 0 12px; font-size: 1.6rem;">כבר קיבלתם קוד? היכנסו לטיול בשניות</h3>
-                    <p style="margin: 0 0 24px; color: var(--slate-500);">הזינו את קוד ההצטרפות והמשיכו מהמקום שהקבוצה הגיעה אליו. אנו נזכיר לכם משימות פתוחות ותאריכים קרובים.</p>
-                    <label for="join-code">קוד הצטרפות</label>
-                    <div class="join-input">
-                        <input type="text" id="join-code" value="TLV9AX" maxlength="12" autocomplete="off">
-                        <button type="button" class="primary-btn"><i data-lucide="log-in"></i> הצטרפות לטיול</button>
-                    </div>
-                    <div class="join-display" id="join-code-display">TLV • 9AX</div>
-                    <div class="invite-list">
-                        <div class="invite-item">
-                            <div>
-                                <strong>ירושלים הקסומה</strong>
-                                <span>יולי 2025 · קוד: JRS542</span>
-                            </div>
-                            <button type="button" class="ghost-btn" data-code="JRS542"><i data-lucide="copy"></i> מילוי קוד</button>
-                        </div>
-                        <div class="invite-item">
-                            <div>
-                                <strong>Roadtrip גלילי</strong>
-                                <span>אוגוסט 2025 · קוד: GLR128</span>
-                            </div>
-                            <button type="button" class="ghost-btn" data-code="GLR128"><i data-lucide="copy"></i> מילוי קוד</button>
-                        </div>
-                        <div class="invite-item">
-                            <div>
-                                <strong>קמפינג סיני</strong>
-                                <span>ספטמבר 2025 · קוד: SND884</span>
-                            </div>
-                            <button type="button" class="ghost-btn" data-code="SND884"><i data-lucide="copy"></i> מילוי קוד</button>
-                        </div>
-                    </div>
-                </div>
-            </section>
-        </main>
-
-        <footer>
-            © 2025 TripFlow. מנוע תכנון הטיולים שדואג לחברים, לתקציב ולזכרונות.
-        </footer>
+                </section>
+            </main>
+        </div>
     </div>
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             lucide.createIcons();
 
-            const destinationInput = document.getElementById('create-destination');
-            const startInput = document.getElementById('create-date');
-            const daysInput = document.getElementById('create-days');
-            const travelersInput = document.getElementById('create-travelers');
-            const budgetInput = document.getElementById('create-budget');
-            const styleButtons = document.querySelectorAll('.style-select .chip');
+            const codeInputs = Array.from(document.querySelectorAll('.join-code-input'));
+            const joinPreview = document.getElementById('join-code-preview');
+            const joinFeedback = document.getElementById('join-feedback');
+            const joinForm = document.getElementById('join-trip-form');
+            const joinPaste = document.getElementById('join-paste-btn');
 
-            const previewDestination = document.getElementById('preview-destination');
-            const previewDates = document.getElementById('preview-dates');
-            const previewTravelers = document.getElementById('preview-travelers');
-            const previewBudget = document.getElementById('preview-budget');
-            const previewStyle = document.getElementById('preview-style');
+            const formatPreview = (code) => {
+                if (!code) return '———';
+                const groups = code.match(/.{1,3}/g);
+                return groups ? groups.join('-') : code;
+            };
 
-            const daysOutput = document.getElementById('days-output');
-            const travelersOutput = document.getElementById('travelers-output');
-            const budgetOutput = document.getElementById('budget-output');
+            const resetJoinFeedback = () => {
+                joinFeedback.classList.add('opacity-0');
+                joinFeedback.textContent = '';
+                joinFeedback.classList.remove('bg-emerald-500/10', 'bg-rose-500/10', 'text-emerald-200', 'text-rose-200');
+            };
 
-            const joinInput = document.getElementById('join-code');
-            const joinDisplay = document.getElementById('join-code-display');
-
-            const intlRange = new Intl.DateTimeFormat('he-IL', { day: 'numeric', month: 'short' });
-            const intlYear = new Intl.DateTimeFormat('he-IL', { year: 'numeric' });
-
-            function formatTravelers(count) {
-                const num = Number(count);
-                if (num <= 1) {
-                    return 'מטייל אחד';
+            const updateJoinPreview = () => {
+                const code = codeInputs.map((input) => input.value).join('').toUpperCase();
+                joinPreview.textContent = formatPreview(code);
+                if (!code) {
+                    resetJoinFeedback();
                 }
-                if (num === 2) {
-                    return 'שני מטיילים';
-                }
-                return `${num} חברים`;
-            }
+            };
 
-            function formatBudget(value) {
-                return `₪${Number(value).toLocaleString('he-IL')} למטייל`;
-            }
+            const showJoinFeedback = (message, isError) => {
+                joinFeedback.textContent = message;
+                joinFeedback.classList.remove('opacity-0');
+                joinFeedback.classList.remove('bg-emerald-500/10', 'bg-rose-500/10', 'text-emerald-200', 'text-rose-200');
+                joinFeedback.classList.add(isError ? 'bg-rose-500/10' : 'bg-emerald-500/10');
+                joinFeedback.classList.add(isError ? 'text-rose-200' : 'text-emerald-200');
+            };
 
-            function formatDateRange(dateValue, daysValue) {
-                if (!dateValue) {
-                    return 'בחרו תאריך התחלה';
-                }
-                const startDate = new Date(`${dateValue}T00:00:00`);
-                if (Number.isNaN(startDate.getTime())) {
-                    return 'תאריך לא תקין';
-                }
-                const duration = Math.max(Number(daysValue) || 1, 1);
-                const endDate = new Date(startDate);
-                endDate.setDate(endDate.getDate() + duration - 1);
-                const startLabel = intlRange.format(startDate);
-                const endLabel = intlRange.format(endDate);
-                const yearLabel = intlYear.format(startDate);
-                return `${startLabel} – ${endLabel} ${yearLabel} · ${duration} ימים`;
-            }
+            codeInputs.forEach((input, index) => {
+                input.addEventListener('input', (event) => {
+                    const value = event.target.value.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
+                    event.target.value = value;
+                    if (value && index < codeInputs.length - 1) {
+                        codeInputs[index + 1].focus();
+                        codeInputs[index + 1].select();
+                    }
+                    updateJoinPreview();
+                });
 
-            function updatePreview() {
-                previewDestination.textContent = destinationInput.value.trim() || 'טיול ללא שם';
-                previewDates.textContent = formatDateRange(startInput.value, daysInput.value);
-                previewTravelers.textContent = formatTravelers(travelersInput.value);
-                previewBudget.textContent = formatBudget(budgetInput.value);
-                daysOutput.textContent = `${daysInput.value} ימים`;
-                travelersOutput.textContent = formatTravelers(travelersInput.value);
-                budgetOutput.textContent = `₪${Number(budgetInput.value).toLocaleString('he-IL')}`;
-            }
-
-            [destinationInput, startInput, daysInput, travelersInput, budgetInput].forEach((el) => {
-                el.addEventListener('input', updatePreview);
-                el.addEventListener('change', updatePreview);
-            });
-
-            styleButtons.forEach((btn) => {
-                btn.addEventListener('click', () => {
-                    styleButtons.forEach((b) => b.classList.remove('selected'));
-                    btn.classList.add('selected');
-                    previewStyle.textContent = btn.dataset.style;
+                input.addEventListener('keydown', (event) => {
+                    if (event.key === 'Backspace' && !event.target.value && index > 0) {
+                        codeInputs[index - 1].focus();
+                        codeInputs[index - 1].select();
+                    }
                 });
             });
 
-            function formatJoinCode(code) {
-                const cleaned = code.toUpperCase().replace(/[^A-Z0-9]/g, '');
-                const groups = cleaned.match(/.{1,3}/g) || [];
-                return groups.join(' • ');
+            if (joinForm) {
+                joinForm.addEventListener('submit', (event) => {
+                    event.preventDefault();
+                    const code = codeInputs.map((input) => input.value).join('');
+                    if (code.length < codeInputs.length) {
+                        showJoinFeedback('אנא הזן קוד מלא כדי להצטרף לטיול.', true);
+                        return;
+                    }
+                    showJoinFeedback(`קוד הטיול הוזן בהצלחה: ${formatPreview(code.toUpperCase())}.`, false);
+                });
             }
 
-            joinInput.addEventListener('input', () => {
-                joinInput.value = joinInput.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
-                joinDisplay.textContent = formatJoinCode(joinInput.value) || 'הקלידו קוד';
-            });
-
-            document.querySelectorAll('[data-code]').forEach((button) => {
-                button.addEventListener('click', () => {
-                    const code = button.dataset.code || '';
-                    joinInput.value = code;
-                    joinInput.dispatchEvent(new Event('input'));
+            if (joinPaste) {
+                joinPaste.addEventListener('click', async () => {
+                    try {
+                        const clipboardText = (await navigator.clipboard.readText()) || '';
+                        const cleaned = clipboardText.replace(/[^a-zA-Z0-9]/g, '').toUpperCase().slice(0, codeInputs.length);
+                        codeInputs.forEach((input, index) => {
+                            input.value = cleaned[index] || '';
+                        });
+                        const focusIndex = Math.min(cleaned.length, codeInputs.length - 1);
+                        if (codeInputs[focusIndex]) {
+                            codeInputs[focusIndex].focus();
+                            codeInputs[focusIndex].select();
+                        }
+                        updateJoinPreview();
+                    } catch (error) {
+                        showJoinFeedback('לא ניתן לקרוא מהלוח. ודאו שהרשאתם גישה.', true);
+                    }
                 });
+            }
+
+            const tripNameInput = document.getElementById('trip-name');
+            const tripDateInput = document.getElementById('trip-date');
+            const tripDescriptionInput = document.getElementById('trip-description');
+            const tripPreviewTitle = document.getElementById('trip-preview-title');
+            const tripPreviewDate = document.getElementById('trip-preview-date');
+            const tripPreviewNote = document.getElementById('trip-preview-note');
+            const createForm = document.getElementById('create-trip-form');
+            const createFeedback = document.getElementById('create-feedback');
+
+            const formatDate = (value) => {
+                if (!value) return '';
+                try {
+                    return new Date(value).toLocaleDateString('he-IL', { day: '2-digit', month: 'long' });
+                } catch (error) {
+                    return value;
+                }
+            };
+
+            const updateCreatePreview = () => {
+                tripPreviewTitle.textContent = tripNameInput.value || 'טיול ללא שם';
+                tripPreviewDate.textContent = tripDateInput.value ? formatDate(tripDateInput.value) : 'בחר תאריך';
+                if (tripDescriptionInput.value.trim()) {
+                    const text = tripDescriptionInput.value.trim();
+                    tripPreviewNote.textContent = text.length > 80 ? `${text.slice(0, 77)}…` : text;
+                } else {
+                    tripPreviewNote.textContent = 'הוסף כמה מילים כדי לספר לחברים למה לצפות בטיול הבא שלכם.';
+                }
+            };
+
+            [tripNameInput, tripDateInput, tripDescriptionInput].forEach((input) => {
+                input.addEventListener('input', updateCreatePreview);
             });
 
-            updatePreview();
-            joinInput.dispatchEvent(new Event('input'));
+            if (createForm) {
+                createForm.addEventListener('submit', (event) => {
+                    event.preventDefault();
+                    updateCreatePreview();
+                    createFeedback.textContent = 'טיול חדש נוצר! שתפו את הקוד עם החברים כדי להתחיל לתכנן יחד.';
+                    createFeedback.classList.remove('opacity-0');
+                });
+            }
 
+            updateCreatePreview();
+            updateJoinPreview();
         });
     </script>
 </body>
