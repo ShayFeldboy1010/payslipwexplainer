@@ -3,561 +3,1269 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>פענוח תלוש שכר עם AI</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <title>TripFlow – תכנון טיולים מודרני</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;600;700&display=swap');
-        
+        :root {
+            --brand-600: #4338ca;
+            --brand-500: #4f46e5;
+            --brand-400: #6366f1;
+            --brand-300: #818cf8;
+            --emerald-400: #34d399;
+            --slate-900: #0f172a;
+            --slate-700: #334155;
+            --slate-500: #64748b;
+            --slate-300: #cbd5f5;
+            --surface-100: rgba(255, 255, 255, 0.88);
+            --surface-80: rgba(255, 255, 255, 0.75);
+            --surface-60: rgba(255, 255, 255, 0.58);
+            --border-soft: rgba(99, 102, 241, 0.18);
+            --shadow-lg: 0 28px 60px rgba(79, 70, 229, 0.15);
+            --radius-xl: 36px;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
         body {
-            font-family: 'Rubik', sans-serif;
+            margin: 0;
+            font-family: 'Rubik', 'Assistant', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: radial-gradient(circle at 20% -10%, rgba(99, 102, 241, 0.23), rgba(255, 255, 255, 0)),
+                        radial-gradient(circle at 85% 10%, rgba(56, 189, 248, 0.2), rgba(255, 255, 255, 0)),
+                        linear-gradient(180deg, #f7f8ff 0%, #ffffff 55%, #fdf2ff 100%);
+            color: var(--slate-900);
+            min-height: 100vh;
+            position: relative;
         }
-        
-        .chat-container {
-            scrollbar-width: thin;
-            scrollbar-color: #3b82f6 #1e293b;
+
+        body::before,
+        body::after {
+            content: "";
+            position: fixed;
+            z-index: -2;
+            border-radius: 50%;
+            filter: blur(90px);
+            opacity: 0.55;
         }
-        
-        .chat-container::-webkit-scrollbar {
-            width: 6px;
+
+        body::before {
+            width: 480px;
+            height: 480px;
+            top: -220px;
+            right: -160px;
+            background: rgba(99, 102, 241, 0.35);
         }
-        
-        .chat-container::-webkit-scrollbar-track {
-            background: #1e293b;
+
+        body::after {
+            width: 380px;
+            height: 380px;
+            bottom: -160px;
+            left: -140px;
+            background: rgba(16, 185, 129, 0.28);
         }
-        
-        .chat-container::-webkit-scrollbar-thumb {
-            background-color: #3b82f6;
-            border-radius: 20px;
+
+        .page-wrapper {
+            width: min(1180px, 92vw);
+            margin: 0 auto;
+            padding: 48px 0 96px;
+            position: relative;
+            z-index: 1;
         }
-        
-        .file-drop-area {
-            border: 2px dashed #3b82f6;
-            transition: all 0.3s ease;
+
+        header.top-bar {
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
         }
-        
-        .file-drop-area.active {
-            border-color: #10b981;
-            background-color: rgba(16, 185, 129, 0.05);
+
+        @media (min-width: 900px) {
+            header.top-bar {
+                flex-direction: row;
+                justify-content: space-between;
+                align-items: center;
+            }
         }
-        
-        .loading-dots {
+
+        .brand {
+            display: flex;
+            gap: 18px;
+            align-items: center;
+        }
+
+        .brand-badge {
+            width: 58px;
+            height: 58px;
+            border-radius: 26px;
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(129, 140, 248, 0.45));
+            display: grid;
+            place-items: center;
+            color: var(--brand-500);
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.65);
+        }
+
+        .brand h1 {
+            font-size: clamp(1.6rem, 2vw + 1rem, 2.3rem);
+            margin: 0;
+            font-weight: 600;
+        }
+
+        .brand p {
+            margin: 6px 0 0;
+            color: var(--slate-500);
+            font-size: 0.95rem;
+        }
+
+        .top-actions {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .ghost-btn,
+        .primary-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            border-radius: 999px;
+            padding: 12px 22px;
+            font-weight: 600;
+            font-size: 0.95rem;
+            cursor: pointer;
+            border: 1px solid transparent;
+            transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.3s ease;
+        }
+
+        .ghost-btn {
+            background: rgba(255, 255, 255, 0.55);
+            border-color: rgba(99, 102, 241, 0.22);
+            color: var(--brand-500);
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7), 0 10px 25px rgba(99, 102, 241, 0.05);
+        }
+
+        .ghost-btn:hover {
+            transform: translateY(-1px);
+            background: rgba(255, 255, 255, 0.75);
+        }
+
+        .primary-btn {
+            background: linear-gradient(135deg, var(--brand-500), var(--brand-300));
+            color: white;
+            box-shadow: 0 16px 35px rgba(79, 70, 229, 0.25);
+        }
+
+        .primary-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 22px 38px rgba(79, 70, 229, 0.3);
+        }
+
+        .hero {
+            margin-top: 40px;
+            padding: clamp(32px, 5vw, 56px);
+            background: radial-gradient(circle at 5% 15%, rgba(255, 255, 255, 0.8), rgba(255, 255, 255, 0)) 0 0 / 240px 240px,
+                        linear-gradient(135deg, rgba(99, 102, 241, 0.12), rgba(129, 140, 248, 0.16));
+            border-radius: var(--radius-xl);
+            box-shadow: var(--shadow-lg);
+            border: 1px solid rgba(99, 102, 241, 0.12);
+            backdrop-filter: blur(22px);
+            position: relative;
+            overflow: hidden;
+            display: grid;
+            gap: clamp(32px, 4vw, 48px);
+        }
+
+        .hero::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(circle at 85% 20%, rgba(59, 130, 246, 0.18), transparent 55%),
+                        radial-gradient(circle at 20% 85%, rgba(16, 185, 129, 0.18), transparent 50%);
+            mix-blend-mode: screen;
+            opacity: 0.85;
+        }
+
+        @media (min-width: 980px) {
+            .hero {
+                grid-template-columns: 1.15fr 0.85fr;
+                align-items: center;
+            }
+        }
+
+        .hero-content {
+            position: relative;
+            z-index: 1;
+        }
+
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            border-radius: 999px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            background: rgba(255, 255, 255, 0.7);
+            color: var(--brand-600);
+            border: 1px solid rgba(99, 102, 241, 0.18);
+        }
+
+        .hero h2 {
+            margin: 22px 0 16px;
+            font-size: clamp(2.1rem, 2vw + 2rem, 3.1rem);
+            line-height: 1.2;
+            font-weight: 600;
+            color: var(--slate-900);
+        }
+
+        .hero p {
+            margin: 0 0 26px;
+            color: rgba(15, 23, 42, 0.78);
+            font-size: 1.05rem;
+            max-width: 32ch;
+        }
+
+        .hero-actions {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .hero-stats {
+            margin-top: 40px;
+            display: grid;
+            gap: 16px;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+        }
+
+        .stat-card {
+            padding: 18px 20px;
+            border-radius: 22px;
+            background: rgba(255, 255, 255, 0.78);
+            border: 1px solid rgba(99, 102, 241, 0.12);
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .stat-card span:first-child {
+            font-size: 0.75rem;
+            letter-spacing: 0.08em;
+            color: var(--slate-500);
+            font-weight: 600;
+        }
+
+        .stat-card strong {
+            font-size: 1.6rem;
+            color: var(--slate-900);
+        }
+
+        .hero-preview {
+            position: relative;
+            z-index: 1;
+        }
+
+        .hero-preview-card {
+            background: var(--surface-100);
+            border-radius: 30px;
+            padding: 26px;
+            box-shadow: 0 24px 45px rgba(15, 23, 42, 0.08);
+            border: 1px solid rgba(148, 163, 184, 0.18);
+            display: grid;
+            gap: 18px;
+        }
+
+        .hero-preview-cover {
+            position: relative;
+            border-radius: 24px;
+            padding: 22px;
+            overflow: hidden;
+            color: white;
+            min-height: 160px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .hero-preview-cover::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, rgba(79, 70, 229, 0.9), rgba(99, 102, 241, 0.55));
+        }
+
+        .hero-preview-cover > * {
+            position: relative;
+            z-index: 1;
+        }
+
+        .hero-preview-cover h3 {
+            margin: 0;
+            font-size: 1.35rem;
+            line-height: 1.4;
+        }
+
+        .preview-meta {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 0.85rem;
+            opacity: 0.9;
+        }
+
+        .preview-meta span {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .preview-users {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .avatar-stack {
             display: inline-flex;
             align-items: center;
         }
-        
-        .loading-dots span {
-            width: 8px;
-            height: 8px;
-            margin: 0 2px;
-            background-color: #9ca3af;
+
+        .avatar {
+            width: 36px;
+            height: 36px;
             border-radius: 50%;
-            display: inline-block;
-            animation: bounce 1.4s infinite ease-in-out both;
+            display: grid;
+            place-items: center;
+            font-size: 0.9rem;
+            font-weight: 600;
+            border: 2px solid rgba(255, 255, 255, 0.65);
+            background: rgba(255, 255, 255, 0.25);
+            margin-left: -10px;
         }
-        
-        .loading-dots span:nth-child(1) {
-            animation-delay: -0.32s;
+
+        .avatar:first-child {
+            margin-left: 0;
         }
-        
-        .loading-dots span:nth-child(2) {
-            animation-delay: -0.16s;
+
+        .preview-divider {
+            height: 1px;
+            background: rgba(148, 163, 184, 0.25);
+            width: 100%;
         }
-        
-        @keyframes bounce {
-            0%, 80%, 100% { 
-                transform: scale(0);
-            } 40% { 
-                transform: scale(1);
+
+        .preview-info {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.9rem;
+        }
+
+        .badge-soft {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            border-radius: 999px;
+            background: rgba(59, 130, 246, 0.12);
+            color: #2563eb;
+            font-size: 0.82rem;
+            font-weight: 600;
+        }
+
+        main {
+            margin-top: 56px;
+            display: grid;
+            gap: 40px;
+        }
+
+        .panels-grid {
+            display: grid;
+            gap: 24px;
+        }
+
+        @media (min-width: 980px) {
+            .panels-grid {
+                grid-template-columns: 1.15fr 0.85fr;
             }
         }
-        
-        .skeleton {
-            animation: skeleton-loading 1s linear infinite alternate;
+
+        .panel {
+            background: var(--surface-80);
+            border-radius: 30px;
+            padding: clamp(28px, 4vw, 36px);
+            border: 1px solid var(--border-soft);
+            box-shadow: 0 18px 45px rgba(15, 23, 42, 0.06);
+            position: relative;
+            overflow: hidden;
         }
-        
-        @keyframes skeleton-loading {
-            0% {
-                background-color: hsl(200, 20%, 20%);
+
+        .panel::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.08), rgba(129, 140, 248, 0.18));
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            z-index: 0;
+        }
+
+        .panel:hover::before {
+            opacity: 1;
+        }
+
+        .panel > * {
+            position: relative;
+            z-index: 1;
+        }
+
+        .panel h3 {
+            margin: 0;
+            font-size: 1.6rem;
+            font-weight: 600;
+            color: var(--slate-900);
+        }
+
+        .panel p.description {
+            margin: 12px 0 26px;
+            color: rgba(15, 23, 42, 0.68);
+            font-size: 0.98rem;
+        }
+
+        .create-layout {
+            display: grid;
+            gap: 22px;
+        }
+
+        @media (min-width: 960px) {
+            .create-layout {
+                grid-template-columns: 1fr 0.9fr;
+                align-items: stretch;
             }
-            100% {
-                background-color: hsl(200, 20%, 30%);
+        }
+
+        .input-grid {
+            display: grid;
+            gap: 18px;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        }
+
+        .input-field {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .input-field label {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--slate-700);
+        }
+
+        .input-field input,
+        .input-field textarea,
+        .input-field select {
+            border-radius: 18px;
+            border: 1px solid rgba(148, 163, 184, 0.35);
+            padding: 14px 16px;
+            font-size: 0.95rem;
+            background: rgba(248, 250, 255, 0.95);
+            transition: border 0.2s ease, box-shadow 0.2s ease;
+            font-family: inherit;
+        }
+
+        .input-field textarea {
+            min-height: 110px;
+            resize: vertical;
+        }
+
+        .input-field input:focus,
+        .input-field textarea:focus,
+        .input-field select:focus {
+            outline: none;
+            border-color: rgba(79, 70, 229, 0.55);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.18);
+        }
+
+        .form-actions {
+            margin-top: 24px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .secondary-btn {
+            border-radius: 16px;
+            padding: 12px 18px;
+            border: 1px dashed rgba(79, 70, 229, 0.45);
+            background: rgba(255, 255, 255, 0.6);
+            font-weight: 600;
+            color: var(--brand-500);
+            cursor: pointer;
+        }
+
+        .secondary-btn:hover {
+            background: rgba(99, 102, 241, 0.08);
+        }
+
+        .preview-card {
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 26px;
+            border: 1px solid rgba(148, 163, 184, 0.22);
+            padding: 24px;
+            display: grid;
+            gap: 18px;
+            box-shadow: 0 20px 35px rgba(15, 23, 42, 0.08);
+        }
+
+        .preview-card header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 0.85rem;
+            color: var(--slate-500);
+        }
+
+        .preview-chip {
+            padding: 6px 12px;
+            border-radius: 999px;
+            background: rgba(99, 102, 241, 0.12);
+            color: var(--brand-500);
+            font-weight: 600;
+            font-size: 0.78rem;
+        }
+
+        .preview-body h4 {
+            margin: 0;
+            font-size: 1.35rem;
+        }
+
+        .preview-body p {
+            margin: 8px 0 0;
+            color: rgba(15, 23, 42, 0.68);
+            font-size: 0.95rem;
+        }
+
+        .preview-footer {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 0.88rem;
+            color: var(--slate-500);
+        }
+
+        .highlight-text {
+            color: var(--brand-500);
+            font-weight: 600;
+        }
+
+        .join-card {
+            background: var(--surface-60);
+        }
+
+        .join-card .sub-card {
+            margin-top: 24px;
+            padding: 18px;
+            border-radius: 20px;
+            background: rgba(248, 250, 255, 0.9);
+            border: 1px solid rgba(148, 163, 184, 0.25);
+        }
+
+        .join-card .sub-card strong {
+            font-size: 0.92rem;
+            color: var(--slate-700);
+        }
+
+        .code-inputs {
+            margin-top: 18px;
+            display: flex;
+            gap: 12px;
+            justify-content: space-between;
+        }
+
+        .code-inputs input {
+            width: 100%;
+            flex: 1;
+            padding: 16px 0;
+            text-align: center;
+            font-size: 1.2rem;
+            font-weight: 700;
+            border-radius: 18px;
+            border: 1px solid rgba(148, 163, 184, 0.4);
+            background: rgba(255, 255, 255, 0.96);
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5);
+            transition: transform 0.2s ease, border 0.2s ease;
+            text-transform: uppercase;
+        }
+
+        .code-inputs input:focus {
+            outline: none;
+            border-color: rgba(79, 70, 229, 0.7);
+            transform: translateY(-2px);
+            box-shadow: 0 15px 28px rgba(99, 102, 241, 0.12);
+        }
+
+        .code-actions {
+            margin-top: 18px;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .text-button {
+            border: none;
+            background: transparent;
+            color: var(--brand-500);
+            font-weight: 600;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 10px 14px;
+            border-radius: 12px;
+        }
+
+        .text-button:hover {
+            background: rgba(99, 102, 241, 0.08);
+        }
+
+        .section-head {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .section-head h3 {
+            margin: 0;
+            font-size: 1.65rem;
+            font-weight: 600;
+        }
+
+        .section-head p {
+            margin: 0;
+            color: rgba(15, 23, 42, 0.65);
+        }
+
+        .trip-grid {
+            margin-top: 28px;
+            display: grid;
+            gap: 22px;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+        }
+
+        .trip-card {
+            background: rgba(255, 255, 255, 0.88);
+            border-radius: 26px;
+            padding: 22px;
+            border: 1px solid rgba(148, 163, 184, 0.2);
+            display: grid;
+            gap: 16px;
+            transition: transform 0.25s ease, box-shadow 0.25s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .trip-card::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            opacity: 0;
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.08), rgba(129, 140, 248, 0.12));
+            transition: opacity 0.25s ease;
+            z-index: 0;
+        }
+
+        .trip-card:hover {
+            transform: translateY(-6px);
+            box-shadow: 0 28px 40px rgba(15, 23, 42, 0.08);
+        }
+
+        .trip-card:hover::after {
+            opacity: 1;
+        }
+
+        .trip-card > * {
+            position: relative;
+            z-index: 1;
+        }
+
+        .trip-card header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.85rem;
+            color: var(--slate-500);
+        }
+
+        .status-chip {
+            padding: 6px 12px;
+            border-radius: 999px;
+            font-weight: 600;
+            font-size: 0.78rem;
+        }
+
+        .status-chip.live {
+            background: rgba(34, 197, 94, 0.12);
+            color: #16a34a;
+        }
+
+        .status-chip.planning {
+            background: rgba(59, 130, 246, 0.12);
+            color: #2563eb;
+        }
+
+        .status-chip.wrapup {
+            background: rgba(249, 115, 22, 0.12);
+            color: #ea580c;
+        }
+
+        .trip-card h4 {
+            margin: 4px 0 8px;
+            font-size: 1.25rem;
+        }
+
+        .trip-meta {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 0.9rem;
+            color: var(--slate-500);
+        }
+
+        .progress {
+            position: relative;
+            height: 7px;
+            border-radius: 999px;
+            background: rgba(148, 163, 184, 0.25);
+            overflow: hidden;
+        }
+
+        .progress span {
+            position: absolute;
+            inset: 0;
+            width: var(--value, 65%);
+            background: linear-gradient(135deg, rgba(79, 70, 229, 0.9), rgba(129, 140, 248, 0.7));
+        }
+
+        .card-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.85rem;
+            color: var(--slate-500);
+        }
+
+        .link-action {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            color: var(--brand-500);
+            font-weight: 600;
+        }
+
+        footer {
+            margin-top: 64px;
+            text-align: center;
+            color: rgba(15, 23, 42, 0.55);
+            font-size: 0.9rem;
+        }
+
+        @media (max-width: 640px) {
+            .brand {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .hero {
+                padding: 28px;
+            }
+
+            .hero-stats {
+                grid-template-columns: 1fr 1fr;
+            }
+
+            .code-inputs {
+                gap: 8px;
+            }
+
+            .code-inputs input {
+                padding: 14px 0;
+                font-size: 1.05rem;
+            }
+
+            .trip-card {
+                padding: 18px;
             }
         }
     </style>
 </head>
-<body class="bg-slate-900 text-slate-100 min-h-screen">
-    <div class="container mx-auto px-4 py-6 max-w-6xl">
-        <!-- Header -->
-        <header class="flex items-center justify-between mb-8">
-            <div class="flex items-center space-x-3 space-x-reverse">
-                <div class="bg-blue-600 p-3 rounded-xl">
-                    <i data-lucide="file-text" class="w-6 h-6 text-white"></i>
+<body>
+    <div class="page-wrapper">
+        <header class="top-bar">
+            <div class="brand">
+                <span class="brand-badge">
+                    <i data-lucide="sparkles" class="icon"></i>
+                </span>
+                <div>
+                    <h1>TripFlow</h1>
+                    <p>הדרך הקלה לשתף הוצאות, מסלולים וחוויות עם החברים למסע.</p>
                 </div>
-                <h1 class="text-2xl font-bold">פענוח תלוש שכר עם AI</h1>
             </div>
-            <button id="theme-toggle" class="p-2 rounded-full hover:bg-slate-800 transition-colors">
-                <i data-lucide="sun" class="w-5 h-5 hidden"></i>
-                <i data-lucide="moon" class="w-5 h-5"></i>
-            </button>
+            <div class="top-actions">
+                <button class="ghost-btn">
+                    <i data-lucide="history"></i>
+                    המשך לטיול האחרון
+                </button>
+                <button class="primary-btn">
+                    <i data-lucide="plus"></i>
+                    התחלת טיול חדש
+                </button>
+            </div>
         </header>
-        
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <!-- Left sidebar - File upload -->
-            <div class="lg:col-span-1 bg-slate-800 rounded-xl p-6">
-                <h2 class="text-lg font-semibold mb-4">העלאת תלוש שכר</h2>
-                
-                <!-- Single file upload -->
-                <div id="file-drop-area" class="file-drop-area rounded-lg p-8 text-center cursor-pointer mb-6">
-                    <div class="flex flex-col items-center justify-center space-y-3">
-                        <i data-lucide="upload" class="w-10 h-10 text-blue-400"></i>
-                        <p class="text-sm text-slate-300">גרור ושחרר קובץ PDF לכאן</p>
-                        <p class="text-xs text-slate-400">או לחץ כדי לבחור קובץ</p>
-                        <input type="file" id="file-input" class="hidden" accept=".pdf,.png,.jpg,.jpeg">
+
+        <section class="hero">
+            <div class="hero-content">
+                <span class="hero-badge">
+                    <i data-lucide="compass"></i>
+                    מסע חכם מתחיל כאן
+                </span>
+                <h2>עיצוב חדש ומזמין לניהול הטיולים המשותפים שלכם.</h2>
+                <p>
+                    אספו רעיונות, שתפו הוצאות ונהלו את כל המשימות בקלות. TripFlow דואג שהחוויה שלכם תתחיל בתחושה נכונה כבר מהמסך הראשון.
+                </p>
+                <div class="hero-actions">
+                    <button class="primary-btn">
+                        <i data-lucide="sparkles"></i>
+                        יצירת טיול מותאם
+                    </button>
+                    <button class="ghost-btn">
+                        <i data-lucide="users"></i>
+                        הזמינו חברים להצטרף
+                    </button>
+                </div>
+
+                <div class="hero-stats">
+                    <div class="stat-card">
+                        <span>טיולים פעילים</span>
+                        <strong>4</strong>
+                        <span>המסעות של השבוע</span>
+                    </div>
+                    <div class="stat-card">
+                        <span>משתתפים מאושרים</span>
+                        <strong>27</strong>
+                        <span>הצטרפו לחוויות חדשות</span>
+                    </div>
+                    <div class="stat-card">
+                        <span>תקציבים בשיתוף</span>
+                        <strong>₪18,450</strong>
+                        <span>באחריות TripFlow</span>
                     </div>
                 </div>
-                
-                <!-- Multiple files for comparison -->
-                <div class="border-t border-slate-700 pt-6">
-                    <h3 class="text-sm font-medium mb-3">השוואה בין תלושים</h3>
-                    <div class="space-y-4">
-                        <div id="compare-drop-area" class="file-drop-area rounded-lg p-6 text-center cursor-pointer">
-                            <div class="flex flex-col items-center justify-center space-y-2">
-                                <i data-lucide="files" class="w-8 h-8 text-blue-400"></i>
-                                <p class="text-sm text-slate-300">העלה 2-5 תלושים להשוואה</p>
-                                <p class="text-xs text-slate-400">בחר מספר קבצים או גרור לכאן</p>
-                                <input type="file" id="compare-input" class="hidden" accept=".pdf,.png,.jpg,.jpeg" multiple>
+            </div>
+
+            <div class="hero-preview">
+                <div class="hero-preview-card">
+                    <div class="hero-preview-cover">
+                        <div class="preview-meta">
+                            <span>
+                                <i data-lucide="map-pin"></i>
+                                נחל עין גדי
+                            </span>
+                            <span>
+                                <i data-lucide="calendar"></i>
+                                22.09.2025
+                            </span>
+                        </div>
+                        <h3>סופ"ש מרענן במדבר</h3>
+                        <div class="preview-users">
+                            <div class="avatar-stack" aria-hidden="true">
+                                <span class="avatar" style="background: rgba(255,255,255,0.35); color: #1e293b;">א</span>
+                                <span class="avatar" style="background: rgba(255,255,255,0.3); color: #1e293b;">ג</span>
+                                <span class="avatar" style="background: rgba(255,255,255,0.25); color: #1e293b;">ל</span>
                             </div>
-                        </div>
-                        <button id="compare-btn" class="w-full bg-blue-600 hover:bg-blue-500 text-sm py-2 px-4 rounded-lg transition-colors">
-                            בחר קבצים להשוואה
-                        </button>
-                    </div>
-                </div>
-
-                <!-- File preview (hidden by default) -->
-                <div id="file-preview" class="mt-6 hidden">
-                    <h3 class="text-sm font-medium mb-3">קבצים שהועלו</h3>
-                    <div id="uploaded-files" class="space-y-2"></div>
-                </div>
-
-                <!-- User history -->
-                <div id="user-history" class="mt-6">
-                    <h3 class="text-sm font-medium mb-3">היסטוריה</h3>
-                    <div id="history-list" class="space-y-2"></div>
-                </div>
-            </div>
-            
-            <!-- Main chat area -->
-            <div class="lg:col-span-2 bg-slate-800 rounded-xl p-0 overflow-hidden flex flex-col">
-                <!-- Chat header -->
-                <div class="bg-slate-700 px-6 py-4 border-b border-slate-600">
-                    <div class="flex items-center space-x-3 space-x-reverse">
-                        <div class="bg-blue-600 p-2 rounded-full">
-                            <i data-lucide="bot" class="w-5 h-5 text-white"></i>
-                        </div>
-                        <h2 class="font-medium">מומחה תלושי שכר - עוזר AI מתקדם</h2>
-                    </div>
-                </div>
-                
-                <!-- Chat messages container -->
-                <div id="chat-container" class="flex-1 overflow-y-auto p-6 space-y-4 chat-container">
-                    <!-- Initial welcome message -->
-                    <div class="flex items-start space-x-3 space-x-reverse">
-                        <div class="bg-slate-700 p-2 rounded-full">
-                            <i data-lucide="bot" class="w-5 h-5 text-blue-400"></i>
-                        </div>
-                        <div class="bg-slate-700 rounded-xl p-4 max-w-[85%]">
-                            <p>שלום! אני מומחה לניתוח תלושי שכר עם ידע נרחב על החוק הישראלי. אני יכול לעזור לך:</p>
-                            <ul class="list-disc list-inside mt-2 space-y-1 text-sm text-slate-300">
-                                <li>לנתח תלוש שכר (PDF או תמונה)</li>
-                                <li>להשוות בין 2-5 תלושים ולזהות שינויים</li>
-                                <li>להסביר כל סעיף בפירוט</li>
-                                <li>לבדוק תקינות ניכויים</li>
-                                <li>לענות על שאלות על זכויות עובד</li>
-                                <li>לזהות שגיאות ואי-התאמות לחוק</li>
-                            </ul>
+                            <span>4 חברים • 12 משימות</span>
                         </div>
                     </div>
-                </div>
-                
-                <!-- User input area -->
-                <div class="border-t border-slate-600 p-4">
-                    <div class="relative">
-                        <input 
-                            id="user-input" 
-                            type="text" 
-                            placeholder="שאל שאלה על התלוש..." 
-                            class="w-full bg-slate-700 rounded-full py-3 px-5 pr-12 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        >
-                        <button id="send-btn" class="absolute left-3 top-1/2 transform -translate-y-1/2 bg-blue-600 p-2 rounded-full hover:bg-blue-500 transition-colors">
-                            <i data-lucide="send" class="w-5 h-5 text-white"></i>
-                        </button>
+                    <div class="preview-divider"></div>
+                    <div class="preview-info">
+                        <span class="badge-soft">
+                            <i data-lucide="list-checks"></i>
+                            87% הושלם
+                        </span>
+                        <span>תקציב: ₪3,200</span>
                     </div>
                 </div>
             </div>
-        </div>
+        </section>
+
+        <main>
+            <section class="panels-grid">
+                <article class="panel">
+                    <header>
+                        <h3>צור טיול חדש</h3>
+                        <p class="description">התחילו מסע חדש, הזמינו את החברים המתאימים וקבלו הצצה למסע עוד לפני שהוא יוצא לדרך.</p>
+                    </header>
+                    <div class="create-layout">
+                        <form class="create-form" autocomplete="off">
+                            <div class="input-grid">
+                                <div class="input-field">
+                                    <label for="trip-name">שם הטיול</label>
+                                    <input type="text" id="trip-name" name="trip-name" placeholder="לדוגמה: חופשה משפחתית בגליל" maxlength="60">
+                                </div>
+                                <div class="input-field">
+                                    <label for="trip-destination">יעד מרכזי</label>
+                                    <input type="text" id="trip-destination" name="trip-destination" placeholder="לאן נוסעים?">
+                                </div>
+                                <div class="input-field">
+                                    <label for="trip-date">תאריך יציאה</label>
+                                    <input type="date" id="trip-date" name="trip-date">
+                                </div>
+                                <div class="input-field">
+                                    <label for="trip-budget">תקציב משוער</label>
+                                    <input type="number" id="trip-budget" name="trip-budget" placeholder="₪">
+                                </div>
+                            </div>
+                            <div class="input-field" style="margin-top: 18px;">
+                                <label for="trip-description">תיאור קצר</label>
+                                <textarea id="trip-description" name="trip-description" placeholder="ספרו בקצרה מה מתוכנן בטיול הזה..." maxlength="220"></textarea>
+                            </div>
+                            <div class="form-actions">
+                                <button type="button" class="primary-btn">
+                                    <i data-lucide="wand-2"></i>
+                                    צור טיול עם תבנית
+                                </button>
+                                <button type="button" class="secondary-btn">
+                                    <i data-lucide="share"></i>
+                                    שתף להזמנת חברים
+                                </button>
+                            </div>
+                        </form>
+                        <aside class="preview-card" aria-live="polite">
+                            <header>
+                                <span id="preview-date">בחרו תאריך</span>
+                                <span class="preview-chip">טיול חדש</span>
+                            </header>
+                            <div class="preview-body">
+                                <h4 id="preview-trip-name">טיול ללא שם עדיין</h4>
+                                <p id="preview-description">כאן תופיע תצוגה מקדימה למסע שלכם. מלאו את הפרטים כדי לראות איך זה נראה.</p>
+                            </div>
+                            <div class="preview-footer">
+                                <span>
+                                    <i data-lucide="map"></i>
+                                    <span id="preview-destination">יעד עדיין לא נבחר</span>
+                                </span>
+                                <span>
+                                    <span class="highlight-text" id="preview-budget">₪0</span>
+                                    • תקציב התחלתי
+                                </span>
+                            </div>
+                        </aside>
+                    </div>
+                </article>
+
+                <article class="panel join-card">
+                    <header>
+                        <h3>הצטרפות לטיול קיים</h3>
+                        <p class="description">קיבלתם קוד מחבר? הזינו אותו כאן ותוכלו להצטרף מיד למרחב הטיול, לצפות בעדכונים ולהוסיף רעיונות משלכם.</p>
+                    </header>
+                    <div>
+                        <label for="code-1" class="input-field" style="margin-bottom: 0;">
+                            <span>קוד הצטרפות</span>
+                        </label>
+                        <div class="code-inputs" role="group" aria-labelledby="code-1">
+                            <input id="code-1" class="join-code-input" inputmode="numeric" maxlength="4" aria-label="חלק ראשון של הקוד">
+                            <input id="code-2" class="join-code-input" inputmode="numeric" maxlength="4" aria-label="חלק שני של הקוד">
+                            <input id="code-3" class="join-code-input" inputmode="numeric" maxlength="4" aria-label="חלק שלישי של הקוד">
+                        </div>
+                        <div class="code-actions">
+                            <button type="button" class="text-button" id="paste-code">
+                                <i data-lucide="clipboard"></i>
+                                הדבק קוד מהלוח
+                            </button>
+                            <button type="button" class="text-button" id="copy-invite">
+                                <i data-lucide="copy"></i>
+                                שתפו קוד לדוגמה
+                            </button>
+                        </div>
+                    </div>
+                    <div class="sub-card">
+                        <strong>איך זה עובד?</strong>
+                        <p style="margin: 10px 0 0; color: rgba(15, 23, 42, 0.68); font-size: 0.92rem;">
+                            החברים שכבר בטיול יקבלו התראה כשמצטרפים חדשים מגיעים. תוכלו לעדכן משתתפים, להתעדכן במשימות ולהוסיף הוצאות בלחיצה אחת.
+                        </p>
+                        <ul style="margin: 14px 0 0; padding-right: 18px; color: rgba(15, 23, 42, 0.68); font-size: 0.9rem;">
+                            <li>צפו בלוח זמנים ובמסלולים המומלצים</li>
+                            <li>שתפו טיפים, מסמכים וקבצי מדיה</li>
+                            <li>מעקב חי אחר הוצאות והתחשבנויות</li>
+                        </ul>
+                    </div>
+                </article>
+            </section>
+
+            <section>
+                <div class="section-head">
+                    <h3>טיולים שיצאו לדרך</h3>
+                    <p>קבלו הצצה למסעות הפופולריים ביותר בקהילה והצטרפו אליהם בלחיצה אחת.</p>
+                </div>
+                <div class="trip-grid">
+                    <article class="trip-card">
+                        <header>
+                            <span>15.08.2025</span>
+                            <span class="status-chip live">
+                                <i data-lucide="activity"></i>
+                                פעיל עכשיו
+                            </span>
+                        </header>
+                        <h4>הרפתקה קולינרית בירושלים</h4>
+                        <p style="margin: 0; color: rgba(15, 23, 42, 0.65); font-size: 0.92rem;">
+                            סיור טעימות בשוק מחנה יהודה, סדנת קוקטיילים ולילה במלון בוטיק בעיר העתיקה.
+                        </p>
+                        <div class="trip-meta">
+                            <span>
+                                <i data-lucide="users"></i>
+                                6 משתתפים
+                            </span>
+                            <span>
+                                <i data-lucide="wallet"></i>
+                                ₪4,600 תקציב
+                            </span>
+                        </div>
+                        <div>
+                            <div class="progress" style="--value: 72%; margin: 10px 0 6px;">
+                                <span></span>
+                            </div>
+                            <span style="font-size: 0.82rem; color: rgba(15, 23, 42, 0.6);">72% מהמשימות הושלמו</span>
+                        </div>
+                        <div class="card-footer">
+                            <span class="preview-users">
+                                <div class="avatar-stack" aria-hidden="true">
+                                    <span class="avatar" style="background: #fee2e2; color: #b91c1c;">מ</span>
+                                    <span class="avatar" style="background: #dbeafe; color: #1d4ed8;">ש</span>
+                                    <span class="avatar" style="background: #dcfce7; color: #15803d;">ל</span>
+                                </div>
+                                <span style="margin-right: 6px;">+3</span>
+                            </span>
+                            <a href="#" class="link-action">
+                                <i data-lucide="arrow-left"></i>
+                                הצטרפו עכשיו
+                            </a>
+                        </div>
+                    </article>
+
+                    <article class="trip-card">
+                        <header>
+                            <span>02.10.2025</span>
+                            <span class="status-chip planning">
+                                <i data-lucide="calendar-clock"></i>
+                                בתכנון
+                            </span>
+                        </header>
+                        <h4>טיול אופניים בעמק החולה</h4>
+                        <p style="margin: 0; color: rgba(15, 23, 42, 0.65); font-size: 0.92rem;">
+                            רכיבה לאורך הנחלים, פיקניק בטבע ומצפה שקיעה עם מדריך מקומי.
+                        </p>
+                        <div class="trip-meta">
+                            <span>
+                                <i data-lucide="users"></i>
+                                4 משתתפים
+                            </span>
+                            <span>
+                                <i data-lucide="wallet"></i>
+                                ₪2,850 תקציב
+                            </span>
+                        </div>
+                        <div>
+                            <div class="progress" style="--value: 38%; margin: 10px 0 6px;">
+                                <span></span>
+                            </div>
+                            <span style="font-size: 0.82rem; color: rgba(15, 23, 42, 0.6);">נשאר לקבוע מקומות לינה והסעות</span>
+                        </div>
+                        <div class="card-footer">
+                            <span class="preview-users">
+                                <div class="avatar-stack" aria-hidden="true">
+                                    <span class="avatar" style="background: #ede9fe; color: #5b21b6;">ח</span>
+                                    <span class="avatar" style="background: #cffafe; color: #0f766e;">נ</span>
+                                    <span class="avatar" style="background: #fef9c3; color: #a16207;">א</span>
+                                </div>
+                                <span style="margin-right: 6px;">ממתינים לעוד 2</span>
+                            </span>
+                            <a href="#" class="link-action">
+                                <i data-lucide="arrow-left"></i>
+                                בקשו להצטרף
+                            </a>
+                        </div>
+                    </article>
+
+                    <article class="trip-card">
+                        <header>
+                            <span>29.07.2025</span>
+                            <span class="status-chip wrapup">
+                                <i data-lucide="star"></i>
+                                מסכם חוויות
+                            </span>
+                        </header>
+                        <h4>חופשת חוף באי רודוס</h4>
+                        <p style="margin: 0; color: rgba(15, 23, 42, 0.65); font-size: 0.92rem;">
+                            שלושה ימים של בטן-גב, שוק מקומי והפלגה לשקיעה עם מוזיקה חיה.
+                        </p>
+                        <div class="trip-meta">
+                            <span>
+                                <i data-lucide="users"></i>
+                                5 משתתפים
+                            </span>
+                            <span>
+                                <i data-lucide="wallet"></i>
+                                ₪6,200 תקציב
+                            </span>
+                        </div>
+                        <div>
+                            <div class="progress" style="--value: 100%; margin: 10px 0 6px;">
+                                <span></span>
+                            </div>
+                            <span style="font-size: 0.82rem; color: rgba(15, 23, 42, 0.6);">הטיול הסתיים – זמן לסיכומי הוצאות ותמונות</span>
+                        </div>
+                        <div class="card-footer">
+                            <span class="preview-users">
+                                <div class="avatar-stack" aria-hidden="true">
+                                    <span class="avatar" style="background: #fce7f3; color: #be185d;">ד</span>
+                                    <span class="avatar" style="background: #e0f2fe; color: #0284c7;">י</span>
+                                    <span class="avatar" style="background: #dcfce7; color: #047857;">א</span>
+                                </div>
+                                <span style="margin-right: 6px;">הוסיפו סיפור מסע</span>
+                            </span>
+                            <a href="#" class="link-action">
+                                <i data-lucide="arrow-left"></i>
+                                צפו בסיכום
+                            </a>
+                        </div>
+                    </article>
+                </div>
+            </section>
+        </main>
+
+        <footer>
+            עיצוב חדש של TripFlow – חווית תכנון טיולים מרגשת ומדויקת יותר לכולם.
+        </footer>
     </div>
 
     <script>
-      // Use same-origin in production (Render). Only remap ports when running locally.
-      const origin = window.location.origin;
-      const isLocal = origin.includes('localhost') || origin.includes('127.0.0.1');
-
-      // If local dev on 5000 (e.g., a static server), talk to backend on 8000; otherwise same-origin.
-      const API_BASE = isLocal && origin.includes(':5000')
-        ? origin.replace(':5000', ':8000')
-        : origin; // On Render, stays the same domain with no manual port.
-    </script>
-
-    <script>
-        // Initialize Lucide icons
-        lucide.createIcons();
-
-        // File upload functionality
-        const fileDropArea = document.getElementById('file-drop-area');
-        const fileInput = document.getElementById('file-input');
-        const filePreview = document.getElementById('file-preview');
-        const uploadedFiles = document.getElementById('uploaded-files');
-        const chatContainer = document.getElementById('chat-container');
-        const userInput = document.getElementById('user-input');
-        const sendBtn = document.getElementById('send-btn');
-        const historyList = document.getElementById('history-list');
-        
-        // Comparison functionality
-        const compareDropArea = document.getElementById('compare-drop-area');
-        const compareInput = document.getElementById('compare-input');
-        const compareBtn = document.getElementById('compare-btn');
-
-        let selectedPayslipFile = null;
-        let selectedCompareFiles = [];
-        let currentFileContent = null;
-        let currentAnalysis = null;
-        
-        // Prevent default drag behaviors
-        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-            fileDropArea.addEventListener(eventName, preventDefaults, false);
-        });
-        
-        function preventDefaults(e) {
-            e.preventDefault();
-            e.stopPropagation();
-        }
-        
-        // Highlight drop area when item is dragged over it
-        ['dragenter', 'dragover'].forEach(eventName => {
-            fileDropArea.addEventListener(eventName, highlight, false);
-        });
-        
-        ['dragleave', 'drop'].forEach(eventName => {
-            fileDropArea.addEventListener(eventName, unhighlight, false);
-        });
-        
-        function highlight() {
-            fileDropArea.classList.add('active');
-        }
-        
-        function unhighlight() {
-            fileDropArea.classList.remove('active');
-        }
-        
-        // Handle dropped files
-        fileDropArea.addEventListener('drop', handleDrop, false);
-        
-        function handleDrop(e) {
-            const dt = e.dataTransfer;
-            const files = dt.files;
-            handleFiles(files);
-        }
-        
-        // Handle selected files
-        fileInput.addEventListener('change', function() {
-            handleFiles(this.files);
-        });
-        
-        fileDropArea.addEventListener('click', function() {
-            fileInput.click();
-        });
-        
-        function handleFiles(files) {
-            const f = files && files[0] ? files[0] : null;
-            selectedPayslipFile = f;
-            console.log('[single] picked:', f ? {name: f.name, size: f.size, type: f.type} : null);
-            if (!f) return;
-
-            // Show file preview
-            filePreview.classList.remove('hidden');
-            uploadedFiles.innerHTML = '';
-
-            const fileElement = document.createElement('div');
-            fileElement.className = 'flex items-center space-x-3 space-x-reverse bg-slate-700 p-3 rounded-lg';
-            fileElement.innerHTML = `
-                <i data-lucide="file-text" class="w-5 h-5 text-blue-400"></i>
-                <div class="flex-1 min-w-0">
-                    <p class="text-sm truncate">${f.name}</p>
-                    <p class="text-xs text-slate-400">${(f.size / 1024).toFixed(1)} KB</p>
-                </div>
-                <i data-lucide="check-circle" class="w-5 h-5 text-green-500"></i>
-            `;
-            uploadedFiles.appendChild(fileElement);
-            lucide.createIcons();
-
-            analyzeSingle();
-        }
-
-        async function analyzeSingle() {
-            if (!selectedPayslipFile) {
-                addBotMessage("לא נבחר קובץ.");
-                return;
-            }
-            addBotMessage("מעלה ומנתח את הקובץ...", true);
-            const fd = new FormData();
-            fd.append('file', selectedPayslipFile);
-            const res = await fetch(`${API_BASE}/analyze-payslip`, { method: 'POST', body: fd });
-            let data;
-            try { data = await res.json(); } catch (e) { data = { detail: 'Invalid JSON response' }; }
-
-            stopTyping();
-            if (!res.ok) {
-                console.error('analyze error:', data);
-                addBotMessage(data.detail || "שגיאה בעיבוד הקובץ.");
-                return;
+        document.addEventListener('DOMContentLoaded', () => {
+            if (window.lucide) {
+                window.lucide.createIcons();
             }
 
-            localStorage.setItem('activePayslipId', data.payslip_id);
-            addBotMessage("✅ " + (data.message || "התלוש נשמר. אפשר לשאול שאלות."));
-            return;
-        }
-        
-        // Chat functionality
-        function sendMessage() {
-            const message = userInput.value.trim();
-            if (message) {
-                addUserMessage(message);
-                userInput.value = '';
-                
-                // Show loading indicator
-                addBotMessage("חושב...", true);
-                
-                // Send message to API
-                sendQuestion(message);
-            }
-        }
+            const tripNameInput = document.getElementById('trip-name');
+            const tripDestinationInput = document.getElementById('trip-destination');
+            const tripDateInput = document.getElementById('trip-date');
+            const tripBudgetInput = document.getElementById('trip-budget');
+            const tripDescriptionInput = document.getElementById('trip-description');
 
-        async function sendQuestion(text) {
-            const pid = localStorage.getItem('activePayslipId');
-            const res = await fetch(`${API_BASE}/ask`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ question: text, payslip_id: pid })
-            });
-            const data = await res.json().catch(() => ({ detail: 'Invalid JSON' }));
-            removeLastBotMessage();
-            if (!res.ok) { addBotMessage(data.detail || "שגיאה בשאלה."); return; }
-            addBotMessage(data.answer);
-        }
-        
-        function addUserMessage(message) {
-            const userMessage = document.createElement('div');
-            userMessage.className = 'flex justify-end';
-            userMessage.innerHTML = `
-                <div class="bg-blue-600 rounded-xl p-4 max-w-[85%]">
-                    <p>${message}</p>
-                </div>
-            `;
-            chatContainer.appendChild(userMessage);
-            chatContainer.scrollTop = chatContainer.scrollHeight;
-        }
-        
-        function addBotMessage(message, isLoading = false) {
-            const botMessage = document.createElement('div');
-            botMessage.className = 'flex items-start space-x-3 space-x-reverse';
-            
-            if (isLoading) {
-                botMessage.innerHTML = `
-                    <div class="bg-slate-700 p-2 rounded-full">
-                        <i data-lucide="bot" class="w-5 h-5 text-blue-400"></i>
-                    </div>
-                    <div class="bg-slate-700 rounded-xl p-4 max-w-[85%]">
-                        <div class="loading-dots">
-                            <span></span>
-                            <span></span>
-                            <span></span>
-                        </div>
-                    </div>
-                `;
-            } else {
-                botMessage.innerHTML = `
-                    <div class="bg-slate-700 p-2 rounded-full">
-                        <i data-lucide="bot" class="w-5 h-5 text-blue-400"></i>
-                    </div>
-                    <div class="bg-slate-700 rounded-xl p-4 max-w-[85%]">
-                        <div class="prose prose-sm prose-invert max-w-none">${formatMessage(message)}</div>
-                    </div>
-                `;
-            }
-            
-            chatContainer.appendChild(botMessage);
-            chatContainer.scrollTop = chatContainer.scrollHeight;
-            lucide.createIcons();
-        }
-        
-        function stopTyping() {
-            const loading = chatContainer.querySelector('.loading-dots');
-            if (loading) {
-                const msg = loading.closest('.flex');
-                if (msg) msg.remove();
-            }
-        }
+            const previewName = document.getElementById('preview-trip-name');
+            const previewDestination = document.getElementById('preview-destination');
+            const previewBudget = document.getElementById('preview-budget');
+            const previewDescription = document.getElementById('preview-description');
+            const previewDate = document.getElementById('preview-date');
 
-        function removeLastBotMessage() {
-            const lastMessage = chatContainer.lastElementChild;
-            if (lastMessage && lastMessage.classList.contains('flex')) {
-                chatContainer.removeChild(lastMessage);
+            function formatBudget(value) {
+                if (!value) return '₪0';
+                const number = Number(value.replace(/[^\d]/g, ''));
+                if (!number) return '₪0';
+                return `₪${number.toLocaleString('he-IL')}`;
             }
-        }
-        
-        function formatMessage(message) {
-            // Convert markdown-like formatting to HTML
-            return message
-                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-                .replace(/\*(.*?)\*/g, '<em>$1</em>')
-                .replace(/\n/g, '<br>')
-                .replace(/- (.*?)(<br>|$)/g, '• $1$2');
-        }
-        
-        async function loadHistory() {
-            try {
-                console.log('Loading history from:', `${API_BASE}/get-history`);
-                const response = await fetch(`${API_BASE}/get-history`, {
-                    method: 'GET',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                });
-                
-                if (response.ok) {
-                    const history = await response.json();
-                    displayHistory(history);
-                } else {
-                    console.log('History response not ok:', response.status, response.statusText);
+
+            function formatDate(value) {
+                if (!value) return 'בחרו תאריך';
+                const [year, month, day] = value.split('-');
+                if (!year || !month || !day) return 'בחרו תאריך';
+                return `${day}.${month}.${year}`;
+            }
+
+            function updatePreview() {
+                previewName.textContent = tripNameInput.value.trim() || 'טיול ללא שם עדיין';
+                previewDestination.textContent = tripDestinationInput.value.trim() || 'יעד עדיין לא נבחר';
+                previewBudget.textContent = formatBudget(tripBudgetInput.value);
+                previewDescription.textContent = tripDescriptionInput.value.trim() || 'כאן תופיע תצוגה מקדימה למסע שלכם. מלאו את הפרטים כדי לראות איך זה נראה.';
+                previewDate.textContent = formatDate(tripDateInput.value);
+            }
+
+            [tripNameInput, tripDestinationInput, tripBudgetInput, tripDescriptionInput, tripDateInput].forEach(input => {
+                if (input) {
+                    input.addEventListener('input', updatePreview);
+                    input.addEventListener('change', updatePreview);
                 }
-            } catch (error) {
-                console.error('Error loading history:', error);
-                // Don't show error to user for history loading failure
-            }
-        }
-        
-        function displayHistory(history) {
-            historyList.innerHTML = '';
-            history.forEach(item => {
-                const historyItem = document.createElement('div');
-                historyItem.className = 'bg-slate-700 p-3 rounded-lg cursor-pointer hover:bg-slate-600 transition-colors';
-                historyItem.innerHTML = `
-                    <p class="text-sm truncate">${item.filename}</p>
-                    <p class="text-xs text-slate-400">${new Date(item.created_at).toLocaleDateString('he-IL')}</p>
-                `;
-                historyItem.addEventListener('click', () => loadHistoryItem(item));
-                historyList.appendChild(historyItem);
             });
-        }
-        
-        function loadHistoryItem(item) {
-            currentFileContent = item.extracted_text;
-            currentAnalysis = item.ai_analysis;
-            addBotMessage(`נטען ניתוח עבור: ${item.filename}<br><br>${item.ai_analysis}`);
-        }
-        
-        // Event listeners
-        sendBtn.addEventListener('click', sendMessage);
-        userInput.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                sendMessage();
-            }
-        });
-        
-        // Comparison functionality
-        compareBtn.addEventListener('click', function() {
-            compareInput.click();
-        });
-        
-        compareDropArea.addEventListener('click', function() {
-            compareInput.click();
-        });
-        
-        // Handle compare file drop
-        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-            compareDropArea.addEventListener(eventName, preventDefaults, false);
-        });
-        
-        ['dragenter', 'dragover'].forEach(eventName => {
-            compareDropArea.addEventListener(eventName, () => {
-                compareDropArea.classList.add('active');
-            }, false);
-        });
-        
-        ['dragleave', 'drop'].forEach(eventName => {
-            compareDropArea.addEventListener(eventName, () => {
-                compareDropArea.classList.remove('active');
-            }, false);
-        });
-        
-        compareDropArea.addEventListener('drop', function(e) {
-            const dt = e.dataTransfer;
-            const files = dt.files;
-            handleComparisonFiles(files);
-        }, false);
 
-        compareInput.addEventListener('change', function() {
-            handleComparisonFiles(this.files);
-        });
+            updatePreview();
 
-        function handleComparisonFiles(files) {
-            const arr = Array.from(files || []);
-            selectedCompareFiles = arr;
-            console.log('[compare] picked:', arr.map(f => ({name: f.name, size: f.size, type: f.type})));
-            comparePayslips();
-        }
+            const joinInputs = Array.from(document.querySelectorAll('.join-code-input'));
+            const pasteButton = document.getElementById('paste-code');
+            const copyInviteButton = document.getElementById('copy-invite');
 
-        async function comparePayslips() {
-            if (!selectedCompareFiles || selectedCompareFiles.length < 2) {
-                addBotMessage("נדרשים לפחות 2 קבצים להשוואה.");
-                return;
-            }
-            if (selectedCompareFiles.length > 5) {
-                addBotMessage("ניתן להשוות עד 5 תלושים בו-זמנית. אנא בחר פחות קבצים.");
-                return;
+            function normaliseCode(text) {
+                return text.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
             }
 
-            addBotMessage(`מעלה ומשווה ${selectedCompareFiles.length} תלושים...`, true);
-            const fd = new FormData();
-            selectedCompareFiles.forEach(f => fd.append('files', f));
+            joinInputs.forEach((input, index) => {
+                input.addEventListener('input', (event) => {
+                    const value = normaliseCode(event.target.value);
+                    event.target.value = value.slice(0, 4);
+                    if (value.length >= 4 && joinInputs[index + 1]) {
+                        joinInputs[index + 1].focus();
+                        joinInputs[index + 1].select();
+                    }
+                });
 
-            const res = await fetch(`${API_BASE}/compare-payslips`, { method: 'POST', body: fd });
-            const data = await res.json();
-            if (!res.ok) {
-                console.error('compare error:', data);
-                removeLastBotMessage();
-                addBotMessage(data.detail || "שגיאה בהשוואת התלושים.");
-                return;
-            }
-
-            removeLastBotMessage();
-            let comparisonMessage = `השוואה בין ${data.total_files} תלושים:<br><br>`;
-            comparisonMessage += `<strong>קבצים שהושוו:</strong><br>`;
-            data.payslips.forEach((payslip, index) => {
-                comparisonMessage += `${index + 1}. ${payslip.filename}<br>`;
+                input.addEventListener('keydown', (event) => {
+                    if (event.key === 'Backspace' && !event.target.value && joinInputs[index - 1]) {
+                        joinInputs[index - 1].focus();
+                    }
+                });
             });
-            comparisonMessage += `<br><strong>ניתוח השוואה:</strong><br>${data.comparison_analysis}`;
-            addBotMessage(comparisonMessage);
 
-            currentFileContent = data.payslips.map(p => `${p.filename}: ${p.extracted_text}`).join('\n\n');
-            currentAnalysis = data.comparison_analysis;
-            loadHistory();
-        }
-        
-        // Load history on page load
-        loadHistory();
+            if (pasteButton && navigator.clipboard) {
+                pasteButton.addEventListener('click', async () => {
+                    try {
+                        const text = normaliseCode(await navigator.clipboard.readText());
+                        joinInputs.forEach((input, idx) => {
+                            const segment = text.slice(idx * 4, idx * 4 + 4);
+                            input.value = segment;
+                        });
+                        let lastFilled = null;
+                        for (let i = joinInputs.length - 1; i >= 0; i -= 1) {
+                            if (joinInputs[i].value) {
+                                lastFilled = joinInputs[i];
+                                break;
+                            }
+                        }
+                        if (lastFilled) {
+                            lastFilled.focus();
+                        }
+                    } catch (error) {
+                        pasteButton.textContent = 'לא הצלחנו לקרוא מהלוח';
+                        pasteButton.disabled = true;
+                    }
+                });
+            }
+
+            if (copyInviteButton && navigator.clipboard) {
+                copyInviteButton.addEventListener('click', async () => {
+                    const mockCode = 'trip-8724-flow-5519'.toUpperCase();
+                    try {
+                        await navigator.clipboard.writeText(mockCode);
+                        copyInviteButton.textContent = 'הקוד לדוגמה הועתק!';
+                        setTimeout(() => {
+                            copyInviteButton.innerHTML = '<i data-lucide="copy"></i> שתפו קוד לדוגמה';
+                            window.lucide && window.lucide.createIcons();
+                        }, 2000);
+                    } catch (error) {
+                        copyInviteButton.textContent = 'שיתוף הקוד נכשל';
+                    }
+                });
+            }
+        });
     </script>
 </body>
 </html>
