@@ -3,561 +3,482 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>פענוח תלוש שכר עם AI</title>
+    <title>TripFlow – ניהול טיולים חכם</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;600;700&display=swap');
-        
+
+        :root {
+            color-scheme: dark;
+        }
+
         body {
             font-family: 'Rubik', sans-serif;
         }
-        
-        .chat-container {
-            scrollbar-width: thin;
-            scrollbar-color: #3b82f6 #1e293b;
+
+        .join-code-input::-webkit-outer-spin-button,
+        .join-code-input::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
         }
-        
-        .chat-container::-webkit-scrollbar {
-            width: 6px;
-        }
-        
-        .chat-container::-webkit-scrollbar-track {
-            background: #1e293b;
-        }
-        
-        .chat-container::-webkit-scrollbar-thumb {
-            background-color: #3b82f6;
-            border-radius: 20px;
-        }
-        
-        .file-drop-area {
-            border: 2px dashed #3b82f6;
-            transition: all 0.3s ease;
-        }
-        
-        .file-drop-area.active {
-            border-color: #10b981;
-            background-color: rgba(16, 185, 129, 0.05);
-        }
-        
-        .loading-dots {
-            display: inline-flex;
-            align-items: center;
-        }
-        
-        .loading-dots span {
-            width: 8px;
-            height: 8px;
-            margin: 0 2px;
-            background-color: #9ca3af;
-            border-radius: 50%;
-            display: inline-block;
-            animation: bounce 1.4s infinite ease-in-out both;
-        }
-        
-        .loading-dots span:nth-child(1) {
-            animation-delay: -0.32s;
-        }
-        
-        .loading-dots span:nth-child(2) {
-            animation-delay: -0.16s;
-        }
-        
-        @keyframes bounce {
-            0%, 80%, 100% { 
-                transform: scale(0);
-            } 40% { 
-                transform: scale(1);
-            }
-        }
-        
-        .skeleton {
-            animation: skeleton-loading 1s linear infinite alternate;
-        }
-        
-        @keyframes skeleton-loading {
-            0% {
-                background-color: hsl(200, 20%, 20%);
-            }
-            100% {
-                background-color: hsl(200, 20%, 30%);
-            }
+
+        .join-code-input[type=number] {
+            -moz-appearance: textfield;
         }
     </style>
 </head>
-<body class="bg-slate-900 text-slate-100 min-h-screen">
-    <div class="container mx-auto px-4 py-6 max-w-6xl">
-        <!-- Header -->
-        <header class="flex items-center justify-between mb-8">
-            <div class="flex items-center space-x-3 space-x-reverse">
-                <div class="bg-blue-600 p-3 rounded-xl">
-                    <i data-lucide="file-text" class="w-6 h-6 text-white"></i>
-                </div>
-                <h1 class="text-2xl font-bold">פענוח תלוש שכר עם AI</h1>
-            </div>
-            <button id="theme-toggle" class="p-2 rounded-full hover:bg-slate-800 transition-colors">
-                <i data-lucide="sun" class="w-5 h-5 hidden"></i>
-                <i data-lucide="moon" class="w-5 h-5"></i>
-            </button>
-        </header>
-        
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <!-- Left sidebar - File upload -->
-            <div class="lg:col-span-1 bg-slate-800 rounded-xl p-6">
-                <h2 class="text-lg font-semibold mb-4">העלאת תלוש שכר</h2>
-                
-                <!-- Single file upload -->
-                <div id="file-drop-area" class="file-drop-area rounded-lg p-8 text-center cursor-pointer mb-6">
-                    <div class="flex flex-col items-center justify-center space-y-3">
-                        <i data-lucide="upload" class="w-10 h-10 text-blue-400"></i>
-                        <p class="text-sm text-slate-300">גרור ושחרר קובץ PDF לכאן</p>
-                        <p class="text-xs text-slate-400">או לחץ כדי לבחור קובץ</p>
-                        <input type="file" id="file-input" class="hidden" accept=".pdf,.png,.jpg,.jpeg">
+<body class="bg-slate-950 text-slate-100 min-h-screen relative overflow-hidden">
+    <div class="pointer-events-none absolute inset-0">
+        <div class="absolute -top-44 right-[-10%] h-[28rem] w-[28rem] rounded-full bg-blue-500/40 blur-[150px]"></div>
+        <div class="absolute top-1/3 left-[-18%] h-[22rem] w-[22rem] rounded-full bg-purple-500/30 blur-[160px]"></div>
+        <div class="absolute bottom-[-25%] right-[-5%] h-[26rem] w-[26rem] rounded-full bg-emerald-500/25 blur-[160px]"></div>
+    </div>
+
+    <div class="relative z-10">
+        <div class="mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:px-8">
+            <header class="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
+                <div class="flex items-center gap-4">
+                    <div class="grid h-14 w-14 place-items-center rounded-3xl border border-blue-500/30 bg-blue-500/10 text-blue-200 shadow-lg shadow-blue-500/20">
+                        <i data-lucide="compass" class="h-6 w-6"></i>
+                    </div>
+                    <div>
+                        <p class="text-sm uppercase tracking-[0.35em] text-blue-200/60">TripFlow</p>
+                        <h1 class="mt-1 text-2xl font-semibold text-white sm:text-3xl">המסע המשותף שלך מתחיל כאן</h1>
+                        <p class="mt-2 text-sm text-slate-400">נהל הוצאות, חלק משימות ותכנן את החוויה המושלמת לכל חברי הקבוצה.</p>
                     </div>
                 </div>
-                
-                <!-- Multiple files for comparison -->
-                <div class="border-t border-slate-700 pt-6">
-                    <h3 class="text-sm font-medium mb-3">השוואה בין תלושים</h3>
-                    <div class="space-y-4">
-                        <div id="compare-drop-area" class="file-drop-area rounded-lg p-6 text-center cursor-pointer">
-                            <div class="flex flex-col items-center justify-center space-y-2">
-                                <i data-lucide="files" class="w-8 h-8 text-blue-400"></i>
-                                <p class="text-sm text-slate-300">העלה 2-5 תלושים להשוואה</p>
-                                <p class="text-xs text-slate-400">בחר מספר קבצים או גרור לכאן</p>
-                                <input type="file" id="compare-input" class="hidden" accept=".pdf,.png,.jpg,.jpeg" multiple>
+                <div class="flex flex-wrap items-center gap-3">
+                    <button class="hidden rounded-2xl border border-white/10 bg-white/5 px-5 py-3 text-sm font-medium text-white/80 backdrop-blur transition hover:border-white/30 hover:text-white/95 sm:inline-flex sm:items-center sm:gap-2">
+                        <i data-lucide="bell" class="h-4 w-4"></i>
+                        מרכז התראות
+                    </button>
+                    <button class="inline-flex items-center gap-2 rounded-2xl bg-blue-500 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-blue-500/30 transition hover:bg-blue-400">
+                        <i data-lucide="plus" class="h-4 w-4"></i>
+                        התחלת טיול חדש
+                    </button>
+                </div>
+            </header>
+
+            <main class="mt-10 space-y-10">
+                <section class="relative overflow-hidden rounded-[2.5rem] border border-white/10 bg-gradient-to-br from-blue-600/40 via-blue-500/10 to-slate-900/60 p-8 shadow-2xl shadow-blue-900/40 backdrop-blur-xl sm:p-10">
+                    <div class="grid gap-8 md:grid-cols-[1.1fr,0.9fr] md:items-center">
+                        <div>
+                            <span class="inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.35em] text-blue-100/80">
+                                <span class="h-2 w-2 rounded-full bg-emerald-400"></span>
+                                לוח זמנים חי
+                            </span>
+                            <h2 class="mt-6 text-3xl font-semibold leading-tight text-white sm:text-4xl">תכנן את הטיול הבא שלך בעיצוב מודרני ונקי</h2>
+                            <p class="mt-4 max-w-xl text-sm leading-relaxed text-blue-100/80">TripFlow מרכז עבורך את כל הטיולים במקום אחד – מהתכנון ועד סיכום ההוצאות. צור טיולים חדשים, נהל את הפרטים הקטנים והזמן חברים להצטרף במהירות.</p>
+                            <div class="mt-6 flex flex-wrap gap-3">
+                                <button class="inline-flex items-center gap-2 rounded-2xl bg-white px-6 py-3 text-sm font-semibold text-slate-900 shadow-lg shadow-white/30 transition hover:bg-slate-100">
+                                    <i data-lucide="play" class="h-4 w-4"></i>
+                                    המשך לטיול האחרון
+                                </button>
+                                <button class="inline-flex items-center gap-2 rounded-2xl border border-white/30 bg-white/5 px-6 py-3 text-sm font-medium text-white/80 backdrop-blur transition hover:border-white/60 hover:text-white">
+                                    <i data-lucide="share-2" class="h-4 w-4"></i>
+                                    שתף עם חברים
+                                </button>
+                            </div>
+                            <dl class="mt-8 grid gap-4 text-sm text-blue-100/80 sm:grid-cols-3">
+                                <div class="rounded-2xl border border-white/15 bg-white/5 p-4">
+                                    <dt class="text-xs uppercase tracking-widest text-blue-200/70">טיולים פעילים</dt>
+                                    <dd class="mt-2 text-2xl font-semibold text-white">3</dd>
+                                    <span class="text-xs text-blue-100/60">משותפים השבוע</span>
+                                </div>
+                                <div class="rounded-2xl border border-white/15 bg-white/5 p-4">
+                                    <dt class="text-xs uppercase tracking-widest text-blue-200/70">חברים שיתפו</dt>
+                                    <dd class="mt-2 text-2xl font-semibold text-white">18</dd>
+                                    <span class="text-xs text-blue-100/60">מצטרפים חדשים</span>
+                                </div>
+                                <div class="rounded-2xl border border-white/15 bg-white/5 p-4">
+                                    <dt class="text-xs uppercase tracking-widest text-blue-200/70">הוצאות מנוהלות</dt>
+                                    <dd class="mt-2 text-2xl font-semibold text-white">₪12,450</dd>
+                                    <span class="text-xs text-blue-100/60">בשלושת החודשים האחרונים</span>
+                                </div>
+                            </dl>
+                        </div>
+                        <div class="relative">
+                            <div class="absolute -top-10 left-6 h-32 w-32 rounded-full bg-blue-400/30 blur-3xl"></div>
+                            <div class="absolute -bottom-12 right-0 h-28 w-28 rounded-full bg-purple-500/30 blur-3xl"></div>
+                            <div class="relative overflow-hidden rounded-3xl border border-white/10 bg-slate-900/70 p-6 shadow-xl backdrop-blur-xl">
+                                <div class="flex items-center justify-between text-xs text-blue-100/80">
+                                    <span class="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1">
+                                        <i data-lucide="map-pin" class="h-4 w-4"></i>
+                                        גליל מערבי
+                                    </span>
+                                    <span>10.08.2025</span>
+                                </div>
+                                <h3 class="mt-4 text-xl font-semibold text-white">חופשת גליל קסומה</h3>
+                                <p class="mt-2 text-sm text-slate-400">נוף ירוק, ארוחות משותפות ומסלולי מים מרעננים. הכל נמצא במקום אחד.</p>
+                                <div class="mt-6 grid gap-4 text-sm text-slate-300 sm:grid-cols-2">
+                                    <div>
+                                        <p class="text-xs text-slate-400">משתתפים</p>
+                                        <div class="mt-3 flex -space-x-3 rtl:space-x-reverse">
+                                            <span class="grid h-9 w-9 place-items-center rounded-full border border-slate-800 bg-slate-700 text-xs font-semibold text-white">שי</span>
+                                            <span class="grid h-9 w-9 place-items-center rounded-full border border-slate-800 bg-blue-600 text-xs font-semibold text-white">הילה</span>
+                                            <span class="grid h-9 w-9 place-items-center rounded-full border border-slate-800 bg-emerald-600 text-xs font-semibold text-white">גיא</span>
+                                        </div>
+                                    </div>
+                                    <div class="text-right">
+                                        <p class="text-xs text-slate-400">הוצאה משוערת</p>
+                                        <p class="mt-3 text-lg font-semibold text-emerald-300">₪2,940</p>
+                                    </div>
+                                </div>
+                                <div class="mt-6 flex items-center justify-between rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-xs text-blue-100/80">
+                                    <div class="flex items-center gap-2">
+                                        <i data-lucide="sparkles" class="h-4 w-4 text-blue-200"></i>
+                                        <span>משימות יומיומיות מסונכרנות</span>
+                                    </div>
+                                    <span class="rounded-full bg-blue-500/20 px-3 py-1 text-[0.65rem] font-semibold text-blue-100">LIVE</span>
+                                </div>
                             </div>
                         </div>
-                        <button id="compare-btn" class="w-full bg-blue-600 hover:bg-blue-500 text-sm py-2 px-4 rounded-lg transition-colors">
-                            בחר קבצים להשוואה
-                        </button>
                     </div>
-                </div>
+                </section>
+                <section class="rounded-[2.25rem] border border-white/5 bg-slate-900/60 p-6 shadow-xl shadow-slate-950/40 backdrop-blur-xl sm:p-8">
+                    <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                        <div>
+                            <h2 class="text-2xl font-semibold text-white">טיולים אחרונים</h2>
+                            <p class="mt-2 text-sm text-slate-400">חזור במהירות לטיולים האחרונים שלך וצפה בעדכונים מהקבוצות.</p>
+                        </div>
+                        <div class="flex flex-wrap items-center gap-3">
+                            <button class="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-5 py-2.5 text-sm font-medium text-white/80 transition hover:border-white/40 hover:text-white">
+                                <i data-lucide="rows" class="h-4 w-4"></i>
+                                הצג הכל
+                            </button>
+                            <button class="inline-flex items-center gap-2 rounded-full bg-blue-500/90 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-400">
+                                <i data-lucide="history" class="h-4 w-4"></i>
+                                המשך לטיול האחרון
+                            </button>
+                        </div>
+                    </div>
+                    <div class="mt-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                        <article class="group relative overflow-hidden rounded-3xl border border-white/10 bg-slate-900/60 p-6 shadow-lg transition hover:-translate-y-1 hover:border-blue-400/60">
+                            <div class="flex items-center justify-between text-xs text-slate-400">
+                                <span class="inline-flex items-center gap-1 rounded-full bg-blue-500/10 px-3 py-1 text-blue-200">
+                                    <i data-lucide="map" class="h-4 w-4"></i>
+                                    גליל עליון
+                                </span>
+                                <span>12.04.2025</span>
+                            </div>
+                            <h3 class="mt-4 text-lg font-semibold text-white">סופ״ש יין בצפון</h3>
+                            <p class="mt-2 text-sm leading-relaxed text-slate-400">יקבים, ספא וטיולי טבע רגועים במשך סוף שבוע מפנק עם החברים.</p>
+                            <div class="mt-6 flex items-center justify-between text-sm text-slate-300">
+                                <div class="flex items-center gap-2">
+                                    <div class="flex -space-x-2 rtl:space-x-reverse">
+                                        <span class="grid h-8 w-8 place-items-center rounded-full border border-slate-800 bg-slate-700 text-[0.7rem] font-medium text-white">אב</span>
+                                        <span class="grid h-8 w-8 place-items-center rounded-full border border-slate-800 bg-blue-600 text-[0.7rem] font-medium text-white">דנ</span>
+                                        <span class="grid h-8 w-8 place-items-center rounded-full border border-slate-800 bg-emerald-600 text-[0.7rem] font-medium text-white">מע</span>
+                                    </div>
+                                    <span class="text-xs text-slate-400">5 משתתפים</span>
+                                </div>
+                                <span class="text-sm font-semibold text-emerald-300">₪3,420</span>
+                            </div>
+                            <button class="mt-6 flex w-full items-center justify-center gap-2 rounded-2xl bg-white/5 px-4 py-3 text-sm font-medium text-white transition hover:bg-blue-500/80 hover:text-white">
+                                <i data-lucide="arrow-up-right" class="h-4 w-4"></i>
+                                פתח טיול
+                            </button>
+                        </article>
+                        <article class="group relative overflow-hidden rounded-3xl border border-white/10 bg-slate-900/60 p-6 shadow-lg transition hover:-translate-y-1 hover:border-emerald-400/60">
+                            <div class="flex items-center justify-between text-xs text-slate-400">
+                                <span class="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-3 py-1 text-emerald-200">
+                                    <i data-lucide="trees" class="h-4 w-4"></i>
+                                    רמת הגולן
+                                </span>
+                                <span>28.05.2025</span>
+                            </div>
+                            <h3 class="mt-4 text-lg font-semibold text-white">טיול שטח וחוויות</h3>
+                            <p class="mt-2 text-sm leading-relaxed text-slate-400">מסלולי ג׳יפים, מעיינות חמים וארוחות משותפות מסביב למדורה.</p>
+                            <div class="mt-6 flex items-center justify-between text-sm text-slate-300">
+                                <div class="flex items-center gap-2">
+                                    <div class="flex -space-x-2 rtl:space-x-reverse">
+                                        <span class="grid h-8 w-8 place-items-center rounded-full border border-slate-800 bg-slate-700 text-[0.7rem] font-medium text-white">ליה</span>
+                                        <span class="grid h-8 w-8 place-items-center rounded-full border border-slate-800 bg-indigo-600 text-[0.7rem] font-medium text-white">שי</span>
+                                        <span class="grid h-8 w-8 place-items-center rounded-full border border-slate-800 bg-emerald-600 text-[0.7rem] font-medium text-white">עיד</span>
+                                    </div>
+                                    <span class="text-xs text-slate-400">6 משתתפים</span>
+                                </div>
+                                <span class="text-sm font-semibold text-emerald-300">₪5,870</span>
+                            </div>
+                            <button class="mt-6 flex w-full items-center justify-center gap-2 rounded-2xl bg-white/5 px-4 py-3 text-sm font-medium text-white transition hover:bg-emerald-500/80 hover:text-white">
+                                <i data-lucide="arrow-up-right" class="h-4 w-4"></i>
+                                פתח טיול
+                            </button>
+                        </article>
+                        <article class="group relative overflow-hidden rounded-3xl border border-white/10 bg-slate-900/60 p-6 shadow-lg transition hover:-translate-y-1 hover:border-purple-400/60">
+                            <div class="flex items-center justify-between text-xs text-slate-400">
+                                <span class="inline-flex items-center gap-1 rounded-full bg-purple-500/10 px-3 py-1 text-purple-200">
+                                    <i data-lucide="sun" class="h-4 w-4"></i>
+                                    אילת וים סוף
+                                </span>
+                                <span>03.06.2025</span>
+                            </div>
+                            <h3 class="mt-4 text-lg font-semibold text-white">חופשה משפחתית מפנקת</h3>
+                            <p class="mt-2 text-sm leading-relaxed text-slate-400">אטרקציות, ארוחות משותפות וחוויות בלתי נשכחות בעיר הנופש של ישראל.</p>
+                            <div class="mt-6 flex items-center justify-between text-sm text-slate-300">
+                                <div class="flex items-center gap-2">
+                                    <div class="flex -space-x-2 rtl:space-x-reverse">
+                                        <span class="grid h-8 w-8 place-items-center rounded-full border border-slate-800 bg-slate-700 text-[0.7rem] font-medium text-white">מא</span>
+                                        <span class="grid h-8 w-8 place-items-center rounded-full border border-slate-800 bg-blue-600 text-[0.7rem] font-medium text-white">גא</span>
+                                        <span class="grid h-8 w-8 place-items-center rounded-full border border-slate-800 bg-rose-600 text-[0.7rem] font-medium text-white">ליא</span>
+                                    </div>
+                                    <span class="text-xs text-slate-400">8 משתתפים</span>
+                                </div>
+                                <span class="text-sm font-semibold text-emerald-300">₪7,320</span>
+                            </div>
+                            <button class="mt-6 flex w-full items-center justify-center gap-2 rounded-2xl bg-white/5 px-4 py-3 text-sm font-medium text-white transition hover:bg-purple-500/80 hover:text-white">
+                                <i data-lucide="arrow-up-right" class="h-4 w-4"></i>
+                                פתח טיול
+                            </button>
+                        </article>
+                    </div>
+                </section>
+                <section class="grid gap-6 lg:grid-cols-[minmax(0,1.1fr),minmax(0,0.9fr)]">
+                    <div class="relative overflow-hidden rounded-[2.25rem] border border-white/10 bg-gradient-to-br from-blue-600/80 via-indigo-600/70 to-slate-900/60 p-8 shadow-2xl shadow-blue-900/50">
+                        <div class="absolute -top-10 left-10 h-28 w-28 rounded-full bg-white/10 blur-2xl"></div>
+                        <div class="absolute inset-x-8 bottom-0 h-24 rounded-full bg-blue-500/30 blur-3xl"></div>
+                        <div class="relative z-10">
+                            <span class="inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.35em] text-blue-100/80">
+                                <i data-lucide="sparkles" class="h-4 w-4"></i>
+                                יצירת טיול
+                            </span>
+                            <h2 class="mt-4 text-2xl font-semibold text-white">חוויית יצירה ידידותית ואלגנטית</h2>
+                            <p class="mt-3 max-w-xl text-sm text-blue-100/80">ספר לנו על היעד והאווירה. נייצר עבורך קוד שיתוף, נצור משימות ונעדכן את התקציב עוד לפני שהטיול מתחיל.</p>
+                            <form id="create-trip-form" class="mt-6 space-y-5">
+                                <label class="block text-sm font-medium text-blue-100/80">
+                                    שם הטיול
+                                    <div class="relative mt-2">
+                                        <i data-lucide="pen" class="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-blue-100/70"></i>
+                                        <input id="trip-name" type="text" placeholder="לדוגמה: בריחה לגליל" class="w-full rounded-2xl border border-white/20 bg-white/15 px-5 py-3 text-sm text-white placeholder:text-white/50 shadow-inner shadow-blue-900/50 outline-none transition focus:border-white/60 focus:bg-white/20" required>
+                                    </div>
+                                </label>
+                                <div class="grid gap-4 sm:grid-cols-2">
+                                    <label class="block text-sm font-medium text-blue-100/80">
+                                        תאריך התחלה
+                                        <div class="relative mt-2">
+                                            <i data-lucide="calendar" class="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-blue-100/70"></i>
+                                            <input id="trip-date" type="date" class="w-full rounded-2xl border border-white/20 bg-white/15 px-5 py-3 text-sm text-white shadow-inner shadow-blue-900/50 outline-none transition focus:border-white/60 focus:bg-white/20" required>
+                                        </div>
+                                    </label>
+                                    <label class="block text-sm font-medium text-blue-100/80">
+                                        תקציב ראשוני (אופציונלי)
+                                        <div class="relative mt-2">
+                                            <i data-lucide="wallet" class="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-blue-100/70"></i>
+                                            <input id="trip-budget" type="number" inputmode="numeric" min="0" placeholder="₪ 3,000" class="w-full rounded-2xl border border-white/20 bg-white/15 px-5 py-3 text-sm text-white placeholder:text-white/50 shadow-inner shadow-blue-900/50 outline-none transition focus:border-white/60 focus:bg-white/20">
+                                        </div>
+                                    </label>
+                                </div>
+                                <label class="block text-sm font-medium text-blue-100/80">
+                                    תיאור קצר
+                                    <div class="relative mt-2">
+                                        <textarea id="trip-description" rows="3" placeholder="מה הופך את הטיול הזה למיוחד?" class="w-full rounded-2xl border border-white/20 bg-white/15 px-5 py-3 text-sm text-white placeholder:text-white/50 shadow-inner shadow-blue-900/50 outline-none transition focus:border-white/60 focus:bg-white/20"></textarea>
+                                    </div>
+                                </label>
+                                <div class="grid gap-4 lg:grid-cols-[minmax(0,1fr),220px] lg:items-start">
+                                    <button type="submit" class="flex items-center justify-center gap-2 rounded-2xl bg-white px-6 py-3 text-sm font-semibold text-slate-900 shadow-lg shadow-white/40 transition hover:bg-slate-100">
+                                        <i data-lucide="rocket" class="h-4 w-4"></i>
+                                        צור טיול מרגש
+                                    </button>
+                                    <div class="rounded-2xl border border-white/20 bg-white/10 p-4 text-sm text-blue-100/80">
+                                        <p class="text-xs uppercase tracking-[0.3em] text-blue-200/70">תצוגה מקדימה</p>
+                                        <h3 id="trip-preview-title" class="mt-3 text-lg font-semibold text-white">טיול ללא שם</h3>
+                                        <p class="mt-2 flex items-center gap-2 text-xs text-blue-100/70">
+                                            <i data-lucide="clock" class="h-4 w-4"></i>
+                                            <span id="trip-preview-date">בחר תאריך</span>
+                                        </p>
+                                        <p id="trip-preview-note" class="mt-3 text-xs leading-relaxed text-blue-50/80">הוסף כמה מילים כדי לספר לחברים למה לצפות בטיול הבא שלכם.</p>
+                                    </div>
+                                </div>
+                                <div id="create-feedback" class="rounded-2xl bg-emerald-500/10 px-5 py-3 text-sm font-medium text-emerald-200 opacity-0 transition-opacity"></div>
+                            </form>
+                        </div>
+                    </div>
 
-                <!-- File preview (hidden by default) -->
-                <div id="file-preview" class="mt-6 hidden">
-                    <h3 class="text-sm font-medium mb-3">קבצים שהועלו</h3>
-                    <div id="uploaded-files" class="space-y-2"></div>
-                </div>
-
-                <!-- User history -->
-                <div id="user-history" class="mt-6">
-                    <h3 class="text-sm font-medium mb-3">היסטוריה</h3>
-                    <div id="history-list" class="space-y-2"></div>
-                </div>
-            </div>
-            
-            <!-- Main chat area -->
-            <div class="lg:col-span-2 bg-slate-800 rounded-xl p-0 overflow-hidden flex flex-col">
-                <!-- Chat header -->
-                <div class="bg-slate-700 px-6 py-4 border-b border-slate-600">
-                    <div class="flex items-center space-x-3 space-x-reverse">
-                        <div class="bg-blue-600 p-2 rounded-full">
-                            <i data-lucide="bot" class="w-5 h-5 text-white"></i>
+                    <div class="relative overflow-hidden rounded-[2.25rem] border border-white/10 bg-slate-900/70 p-8 shadow-2xl shadow-slate-950/40">
+                        <div class="absolute -top-12 right-8 h-28 w-28 rounded-full bg-emerald-500/20 blur-3xl"></div>
+                        <div class="absolute inset-x-6 bottom-0 h-28 rounded-full bg-blue-500/10 blur-2xl"></div>
+                        <div class="relative z-10">
+                            <span class="inline-flex items-center gap-2 rounded-full bg-white/5 px-4 py-2 text-xs font-semibold uppercase tracking-[0.35em] text-slate-200/80">
+                                <i data-lucide="users" class="h-4 w-4"></i>
+                                הצטרפות לטיול
+                            </span>
+                            <h2 class="mt-4 text-2xl font-semibold text-white">הצטרפות אלגנטית לטיול קיים</h2>
+                            <p class="mt-3 text-sm text-slate-400">קיבלת קוד? הזן אותו כאן והצטרף מיידית לטיול החברים. אין צורך בהרשמה מחדש.</p>
+                            <form id="join-trip-form" class="mt-6 space-y-6">
+                                <div>
+                                    <p class="text-xs font-medium uppercase tracking-[0.25em] text-slate-400">קוד טיול</p>
+                                    <div dir="ltr" class="mt-3 flex items-center justify-between gap-2">
+                                        <input class="join-code-input h-14 w-12 rounded-2xl border border-white/15 bg-slate-800/60 text-center text-lg font-semibold tracking-widest text-white shadow-inner shadow-slate-950/60 outline-none transition focus:border-blue-400/80 focus:bg-slate-900 focus:ring-2 focus:ring-blue-400/50" maxlength="1" inputmode="text" autocomplete="one-time-code">
+                                        <input class="join-code-input h-14 w-12 rounded-2xl border border-white/15 bg-slate-800/60 text-center text-lg font-semibold tracking-widest text-white shadow-inner shadow-slate-950/60 outline-none transition focus:border-blue-400/80 focus:bg-slate-900 focus:ring-2 focus:ring-blue-400/50" maxlength="1" inputmode="text" autocomplete="one-time-code">
+                                        <input class="join-code-input h-14 w-12 rounded-2xl border border-white/15 bg-slate-800/60 text-center text-lg font-semibold tracking-widest text-white shadow-inner shadow-slate-950/60 outline-none transition focus:border-blue-400/80 focus:bg-slate-900 focus:ring-2 focus:ring-blue-400/50" maxlength="1" inputmode="text" autocomplete="one-time-code">
+                                        <input class="join-code-input h-14 w-12 rounded-2xl border border-white/15 bg-slate-800/60 text-center text-lg font-semibold tracking-widest text-white shadow-inner shadow-slate-950/60 outline-none transition focus:border-blue-400/80 focus:bg-slate-900 focus:ring-2 focus:ring-blue-400/50" maxlength="1" inputmode="text" autocomplete="one-time-code">
+                                        <input class="join-code-input h-14 w-12 rounded-2xl border border-white/15 bg-slate-800/60 text-center text-lg font-semibold tracking-widest text-white shadow-inner shadow-slate-950/60 outline-none transition focus:border-blue-400/80 focus:bg-slate-900 focus:ring-2 focus:ring-blue-400/50" maxlength="1" inputmode="text" autocomplete="one-time-code">
+                                        <input class="join-code-input h-14 w-12 rounded-2xl border border-white/15 bg-slate-800/60 text-center text-lg font-semibold tracking-widest text-white shadow-inner shadow-slate-950/60 outline-none transition focus:border-blue-400/80 focus:bg-slate-900 focus:ring-2 focus:ring-blue-400/50" maxlength="1" inputmode="text" autocomplete="one-time-code">
+                                    </div>
+                                    <button id="join-paste-btn" type="button" class="mt-3 inline-flex items-center gap-2 text-xs font-medium text-blue-200/80 transition hover:text-blue-100">
+                                        <i data-lucide="clipboard-paste" class="h-4 w-4"></i>
+                                        הדבק קוד מהלוח
+                                    </button>
+                                </div>
+                                <div class="space-y-3">
+                                    <p class="text-xs font-medium uppercase tracking-[0.3em] text-slate-400">תצוגה מקדימה</p>
+                                    <div dir="ltr" class="flex items-center justify-between rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white">
+                                        <div class="inline-flex items-center gap-2 text-blue-200/80">
+                                            <i data-lucide="key" class="h-4 w-4"></i>
+                                            קוד שיתוף
+                                        </div>
+                                        <span id="join-code-preview" class="font-mono text-lg tracking-[0.45em] text-white/90">———</span>
+                                    </div>
+                                </div>
+                                <button type="submit" class="flex w-full items-center justify-center gap-2 rounded-2xl bg-emerald-500/90 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-emerald-500/30 transition hover:bg-emerald-400">
+                                    <i data-lucide="log-in" class="h-4 w-4"></i>
+                                    הצטרף לטיול
+                                </button>
+                                <div id="join-feedback" class="rounded-2xl px-4 py-3 text-sm font-medium opacity-0 transition-all"></div>
+                            </form>
+                            <p class="mt-6 text-xs text-slate-500">ניתן גם לשתף קישור ישיר לחברים – הוא יעבוד בדיוק כמו קוד ההזמנה.</p>
                         </div>
-                        <h2 class="font-medium">מומחה תלושי שכר - עוזר AI מתקדם</h2>
                     </div>
-                </div>
-                
-                <!-- Chat messages container -->
-                <div id="chat-container" class="flex-1 overflow-y-auto p-6 space-y-4 chat-container">
-                    <!-- Initial welcome message -->
-                    <div class="flex items-start space-x-3 space-x-reverse">
-                        <div class="bg-slate-700 p-2 rounded-full">
-                            <i data-lucide="bot" class="w-5 h-5 text-blue-400"></i>
-                        </div>
-                        <div class="bg-slate-700 rounded-xl p-4 max-w-[85%]">
-                            <p>שלום! אני מומחה לניתוח תלושי שכר עם ידע נרחב על החוק הישראלי. אני יכול לעזור לך:</p>
-                            <ul class="list-disc list-inside mt-2 space-y-1 text-sm text-slate-300">
-                                <li>לנתח תלוש שכר (PDF או תמונה)</li>
-                                <li>להשוות בין 2-5 תלושים ולזהות שינויים</li>
-                                <li>להסביר כל סעיף בפירוט</li>
-                                <li>לבדוק תקינות ניכויים</li>
-                                <li>לענות על שאלות על זכויות עובד</li>
-                                <li>לזהות שגיאות ואי-התאמות לחוק</li>
-                            </ul>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- User input area -->
-                <div class="border-t border-slate-600 p-4">
-                    <div class="relative">
-                        <input 
-                            id="user-input" 
-                            type="text" 
-                            placeholder="שאל שאלה על התלוש..." 
-                            class="w-full bg-slate-700 rounded-full py-3 px-5 pr-12 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        >
-                        <button id="send-btn" class="absolute left-3 top-1/2 transform -translate-y-1/2 bg-blue-600 p-2 rounded-full hover:bg-blue-500 transition-colors">
-                            <i data-lucide="send" class="w-5 h-5 text-white"></i>
-                        </button>
-                    </div>
-                </div>
-            </div>
+                </section>
+            </main>
         </div>
     </div>
 
     <script>
-      // Use same-origin in production (Render). Only remap ports when running locally.
-      const origin = window.location.origin;
-      const isLocal = origin.includes('localhost') || origin.includes('127.0.0.1');
-
-      // If local dev on 5000 (e.g., a static server), talk to backend on 8000; otherwise same-origin.
-      const API_BASE = isLocal && origin.includes(':5000')
-        ? origin.replace(':5000', ':8000')
-        : origin; // On Render, stays the same domain with no manual port.
-    </script>
-
-    <script>
-        // Initialize Lucide icons
-        lucide.createIcons();
-
-        // File upload functionality
-        const fileDropArea = document.getElementById('file-drop-area');
-        const fileInput = document.getElementById('file-input');
-        const filePreview = document.getElementById('file-preview');
-        const uploadedFiles = document.getElementById('uploaded-files');
-        const chatContainer = document.getElementById('chat-container');
-        const userInput = document.getElementById('user-input');
-        const sendBtn = document.getElementById('send-btn');
-        const historyList = document.getElementById('history-list');
-        
-        // Comparison functionality
-        const compareDropArea = document.getElementById('compare-drop-area');
-        const compareInput = document.getElementById('compare-input');
-        const compareBtn = document.getElementById('compare-btn');
-
-        let selectedPayslipFile = null;
-        let selectedCompareFiles = [];
-        let currentFileContent = null;
-        let currentAnalysis = null;
-        
-        // Prevent default drag behaviors
-        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-            fileDropArea.addEventListener(eventName, preventDefaults, false);
-        });
-        
-        function preventDefaults(e) {
-            e.preventDefault();
-            e.stopPropagation();
-        }
-        
-        // Highlight drop area when item is dragged over it
-        ['dragenter', 'dragover'].forEach(eventName => {
-            fileDropArea.addEventListener(eventName, highlight, false);
-        });
-        
-        ['dragleave', 'drop'].forEach(eventName => {
-            fileDropArea.addEventListener(eventName, unhighlight, false);
-        });
-        
-        function highlight() {
-            fileDropArea.classList.add('active');
-        }
-        
-        function unhighlight() {
-            fileDropArea.classList.remove('active');
-        }
-        
-        // Handle dropped files
-        fileDropArea.addEventListener('drop', handleDrop, false);
-        
-        function handleDrop(e) {
-            const dt = e.dataTransfer;
-            const files = dt.files;
-            handleFiles(files);
-        }
-        
-        // Handle selected files
-        fileInput.addEventListener('change', function() {
-            handleFiles(this.files);
-        });
-        
-        fileDropArea.addEventListener('click', function() {
-            fileInput.click();
-        });
-        
-        function handleFiles(files) {
-            const f = files && files[0] ? files[0] : null;
-            selectedPayslipFile = f;
-            console.log('[single] picked:', f ? {name: f.name, size: f.size, type: f.type} : null);
-            if (!f) return;
-
-            // Show file preview
-            filePreview.classList.remove('hidden');
-            uploadedFiles.innerHTML = '';
-
-            const fileElement = document.createElement('div');
-            fileElement.className = 'flex items-center space-x-3 space-x-reverse bg-slate-700 p-3 rounded-lg';
-            fileElement.innerHTML = `
-                <i data-lucide="file-text" class="w-5 h-5 text-blue-400"></i>
-                <div class="flex-1 min-w-0">
-                    <p class="text-sm truncate">${f.name}</p>
-                    <p class="text-xs text-slate-400">${(f.size / 1024).toFixed(1)} KB</p>
-                </div>
-                <i data-lucide="check-circle" class="w-5 h-5 text-green-500"></i>
-            `;
-            uploadedFiles.appendChild(fileElement);
+        document.addEventListener('DOMContentLoaded', () => {
             lucide.createIcons();
 
-            analyzeSingle();
-        }
+            const codeInputs = Array.from(document.querySelectorAll('.join-code-input'));
+            const joinPreview = document.getElementById('join-code-preview');
+            const joinFeedback = document.getElementById('join-feedback');
+            const joinForm = document.getElementById('join-trip-form');
+            const joinPaste = document.getElementById('join-paste-btn');
 
-        async function analyzeSingle() {
-            if (!selectedPayslipFile) {
-                addBotMessage("לא נבחר קובץ.");
-                return;
-            }
-            addBotMessage("מעלה ומנתח את הקובץ...", true);
-            const fd = new FormData();
-            fd.append('file', selectedPayslipFile);
-            const res = await fetch(`${API_BASE}/analyze-payslip`, { method: 'POST', body: fd });
-            let data;
-            try { data = await res.json(); } catch (e) { data = { detail: 'Invalid JSON response' }; }
+            const formatPreview = (code) => {
+                if (!code) return '———';
+                const groups = code.match(/.{1,3}/g);
+                return groups ? groups.join('-') : code;
+            };
 
-            stopTyping();
-            if (!res.ok) {
-                console.error('analyze error:', data);
-                addBotMessage(data.detail || "שגיאה בעיבוד הקובץ.");
-                return;
-            }
+            const resetJoinFeedback = () => {
+                joinFeedback.classList.add('opacity-0');
+                joinFeedback.textContent = '';
+                joinFeedback.classList.remove('bg-emerald-500/10', 'bg-rose-500/10', 'text-emerald-200', 'text-rose-200');
+            };
 
-            localStorage.setItem('activePayslipId', data.payslip_id);
-            addBotMessage("✅ " + (data.message || "התלוש נשמר. אפשר לשאול שאלות."));
-            return;
-        }
-        
-        // Chat functionality
-        function sendMessage() {
-            const message = userInput.value.trim();
-            if (message) {
-                addUserMessage(message);
-                userInput.value = '';
-                
-                // Show loading indicator
-                addBotMessage("חושב...", true);
-                
-                // Send message to API
-                sendQuestion(message);
-            }
-        }
-
-        async function sendQuestion(text) {
-            const pid = localStorage.getItem('activePayslipId');
-            const res = await fetch(`${API_BASE}/ask`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ question: text, payslip_id: pid })
-            });
-            const data = await res.json().catch(() => ({ detail: 'Invalid JSON' }));
-            removeLastBotMessage();
-            if (!res.ok) { addBotMessage(data.detail || "שגיאה בשאלה."); return; }
-            addBotMessage(data.answer);
-        }
-        
-        function addUserMessage(message) {
-            const userMessage = document.createElement('div');
-            userMessage.className = 'flex justify-end';
-            userMessage.innerHTML = `
-                <div class="bg-blue-600 rounded-xl p-4 max-w-[85%]">
-                    <p>${message}</p>
-                </div>
-            `;
-            chatContainer.appendChild(userMessage);
-            chatContainer.scrollTop = chatContainer.scrollHeight;
-        }
-        
-        function addBotMessage(message, isLoading = false) {
-            const botMessage = document.createElement('div');
-            botMessage.className = 'flex items-start space-x-3 space-x-reverse';
-            
-            if (isLoading) {
-                botMessage.innerHTML = `
-                    <div class="bg-slate-700 p-2 rounded-full">
-                        <i data-lucide="bot" class="w-5 h-5 text-blue-400"></i>
-                    </div>
-                    <div class="bg-slate-700 rounded-xl p-4 max-w-[85%]">
-                        <div class="loading-dots">
-                            <span></span>
-                            <span></span>
-                            <span></span>
-                        </div>
-                    </div>
-                `;
-            } else {
-                botMessage.innerHTML = `
-                    <div class="bg-slate-700 p-2 rounded-full">
-                        <i data-lucide="bot" class="w-5 h-5 text-blue-400"></i>
-                    </div>
-                    <div class="bg-slate-700 rounded-xl p-4 max-w-[85%]">
-                        <div class="prose prose-sm prose-invert max-w-none">${formatMessage(message)}</div>
-                    </div>
-                `;
-            }
-            
-            chatContainer.appendChild(botMessage);
-            chatContainer.scrollTop = chatContainer.scrollHeight;
-            lucide.createIcons();
-        }
-        
-        function stopTyping() {
-            const loading = chatContainer.querySelector('.loading-dots');
-            if (loading) {
-                const msg = loading.closest('.flex');
-                if (msg) msg.remove();
-            }
-        }
-
-        function removeLastBotMessage() {
-            const lastMessage = chatContainer.lastElementChild;
-            if (lastMessage && lastMessage.classList.contains('flex')) {
-                chatContainer.removeChild(lastMessage);
-            }
-        }
-        
-        function formatMessage(message) {
-            // Convert markdown-like formatting to HTML
-            return message
-                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-                .replace(/\*(.*?)\*/g, '<em>$1</em>')
-                .replace(/\n/g, '<br>')
-                .replace(/- (.*?)(<br>|$)/g, '• $1$2');
-        }
-        
-        async function loadHistory() {
-            try {
-                console.log('Loading history from:', `${API_BASE}/get-history`);
-                const response = await fetch(`${API_BASE}/get-history`, {
-                    method: 'GET',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                });
-                
-                if (response.ok) {
-                    const history = await response.json();
-                    displayHistory(history);
-                } else {
-                    console.log('History response not ok:', response.status, response.statusText);
+            const updateJoinPreview = () => {
+                const code = codeInputs.map((input) => input.value).join('').toUpperCase();
+                joinPreview.textContent = formatPreview(code);
+                if (!code) {
+                    resetJoinFeedback();
                 }
-            } catch (error) {
-                console.error('Error loading history:', error);
-                // Don't show error to user for history loading failure
-            }
-        }
-        
-        function displayHistory(history) {
-            historyList.innerHTML = '';
-            history.forEach(item => {
-                const historyItem = document.createElement('div');
-                historyItem.className = 'bg-slate-700 p-3 rounded-lg cursor-pointer hover:bg-slate-600 transition-colors';
-                historyItem.innerHTML = `
-                    <p class="text-sm truncate">${item.filename}</p>
-                    <p class="text-xs text-slate-400">${new Date(item.created_at).toLocaleDateString('he-IL')}</p>
-                `;
-                historyItem.addEventListener('click', () => loadHistoryItem(item));
-                historyList.appendChild(historyItem);
+            };
+
+            const showJoinFeedback = (message, isError) => {
+                joinFeedback.textContent = message;
+                joinFeedback.classList.remove('opacity-0');
+                joinFeedback.classList.remove('bg-emerald-500/10', 'bg-rose-500/10', 'text-emerald-200', 'text-rose-200');
+                joinFeedback.classList.add(isError ? 'bg-rose-500/10' : 'bg-emerald-500/10');
+                joinFeedback.classList.add(isError ? 'text-rose-200' : 'text-emerald-200');
+            };
+
+            codeInputs.forEach((input, index) => {
+                input.addEventListener('input', (event) => {
+                    const value = event.target.value.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
+                    event.target.value = value;
+                    if (value && index < codeInputs.length - 1) {
+                        codeInputs[index + 1].focus();
+                        codeInputs[index + 1].select();
+                    }
+                    updateJoinPreview();
+                });
+
+                input.addEventListener('keydown', (event) => {
+                    if (event.key === 'Backspace' && !event.target.value && index > 0) {
+                        codeInputs[index - 1].focus();
+                        codeInputs[index - 1].select();
+                    }
+                });
             });
-        }
-        
-        function loadHistoryItem(item) {
-            currentFileContent = item.extracted_text;
-            currentAnalysis = item.ai_analysis;
-            addBotMessage(`נטען ניתוח עבור: ${item.filename}<br><br>${item.ai_analysis}`);
-        }
-        
-        // Event listeners
-        sendBtn.addEventListener('click', sendMessage);
-        userInput.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                sendMessage();
-            }
-        });
-        
-        // Comparison functionality
-        compareBtn.addEventListener('click', function() {
-            compareInput.click();
-        });
-        
-        compareDropArea.addEventListener('click', function() {
-            compareInput.click();
-        });
-        
-        // Handle compare file drop
-        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-            compareDropArea.addEventListener(eventName, preventDefaults, false);
-        });
-        
-        ['dragenter', 'dragover'].forEach(eventName => {
-            compareDropArea.addEventListener(eventName, () => {
-                compareDropArea.classList.add('active');
-            }, false);
-        });
-        
-        ['dragleave', 'drop'].forEach(eventName => {
-            compareDropArea.addEventListener(eventName, () => {
-                compareDropArea.classList.remove('active');
-            }, false);
-        });
-        
-        compareDropArea.addEventListener('drop', function(e) {
-            const dt = e.dataTransfer;
-            const files = dt.files;
-            handleComparisonFiles(files);
-        }, false);
 
-        compareInput.addEventListener('change', function() {
-            handleComparisonFiles(this.files);
-        });
-
-        function handleComparisonFiles(files) {
-            const arr = Array.from(files || []);
-            selectedCompareFiles = arr;
-            console.log('[compare] picked:', arr.map(f => ({name: f.name, size: f.size, type: f.type})));
-            comparePayslips();
-        }
-
-        async function comparePayslips() {
-            if (!selectedCompareFiles || selectedCompareFiles.length < 2) {
-                addBotMessage("נדרשים לפחות 2 קבצים להשוואה.");
-                return;
-            }
-            if (selectedCompareFiles.length > 5) {
-                addBotMessage("ניתן להשוות עד 5 תלושים בו-זמנית. אנא בחר פחות קבצים.");
-                return;
+            if (joinForm) {
+                joinForm.addEventListener('submit', (event) => {
+                    event.preventDefault();
+                    const code = codeInputs.map((input) => input.value).join('');
+                    if (code.length < codeInputs.length) {
+                        showJoinFeedback('אנא הזן קוד מלא כדי להצטרף לטיול.', true);
+                        return;
+                    }
+                    showJoinFeedback(`קוד הטיול הוזן בהצלחה: ${formatPreview(code.toUpperCase())}.`, false);
+                });
             }
 
-            addBotMessage(`מעלה ומשווה ${selectedCompareFiles.length} תלושים...`, true);
-            const fd = new FormData();
-            selectedCompareFiles.forEach(f => fd.append('files', f));
-
-            const res = await fetch(`${API_BASE}/compare-payslips`, { method: 'POST', body: fd });
-            const data = await res.json();
-            if (!res.ok) {
-                console.error('compare error:', data);
-                removeLastBotMessage();
-                addBotMessage(data.detail || "שגיאה בהשוואת התלושים.");
-                return;
+            if (joinPaste) {
+                joinPaste.addEventListener('click', async () => {
+                    try {
+                        const clipboardText = (await navigator.clipboard.readText()) || '';
+                        const cleaned = clipboardText.replace(/[^a-zA-Z0-9]/g, '').toUpperCase().slice(0, codeInputs.length);
+                        codeInputs.forEach((input, index) => {
+                            input.value = cleaned[index] || '';
+                        });
+                        const focusIndex = Math.min(cleaned.length, codeInputs.length - 1);
+                        if (codeInputs[focusIndex]) {
+                            codeInputs[focusIndex].focus();
+                            codeInputs[focusIndex].select();
+                        }
+                        updateJoinPreview();
+                    } catch (error) {
+                        showJoinFeedback('לא ניתן לקרוא מהלוח. ודאו שהרשאתם גישה.', true);
+                    }
+                });
             }
 
-            removeLastBotMessage();
-            let comparisonMessage = `השוואה בין ${data.total_files} תלושים:<br><br>`;
-            comparisonMessage += `<strong>קבצים שהושוו:</strong><br>`;
-            data.payslips.forEach((payslip, index) => {
-                comparisonMessage += `${index + 1}. ${payslip.filename}<br>`;
+            const tripNameInput = document.getElementById('trip-name');
+            const tripDateInput = document.getElementById('trip-date');
+            const tripDescriptionInput = document.getElementById('trip-description');
+            const tripPreviewTitle = document.getElementById('trip-preview-title');
+            const tripPreviewDate = document.getElementById('trip-preview-date');
+            const tripPreviewNote = document.getElementById('trip-preview-note');
+            const createForm = document.getElementById('create-trip-form');
+            const createFeedback = document.getElementById('create-feedback');
+
+            const formatDate = (value) => {
+                if (!value) return '';
+                try {
+                    return new Date(value).toLocaleDateString('he-IL', { day: '2-digit', month: 'long' });
+                } catch (error) {
+                    return value;
+                }
+            };
+
+            const updateCreatePreview = () => {
+                tripPreviewTitle.textContent = tripNameInput.value || 'טיול ללא שם';
+                tripPreviewDate.textContent = tripDateInput.value ? formatDate(tripDateInput.value) : 'בחר תאריך';
+                if (tripDescriptionInput.value.trim()) {
+                    const text = tripDescriptionInput.value.trim();
+                    tripPreviewNote.textContent = text.length > 80 ? `${text.slice(0, 77)}…` : text;
+                } else {
+                    tripPreviewNote.textContent = 'הוסף כמה מילים כדי לספר לחברים למה לצפות בטיול הבא שלכם.';
+                }
+            };
+
+            [tripNameInput, tripDateInput, tripDescriptionInput].forEach((input) => {
+                input.addEventListener('input', updateCreatePreview);
             });
-            comparisonMessage += `<br><strong>ניתוח השוואה:</strong><br>${data.comparison_analysis}`;
-            addBotMessage(comparisonMessage);
 
-            currentFileContent = data.payslips.map(p => `${p.filename}: ${p.extracted_text}`).join('\n\n');
-            currentAnalysis = data.comparison_analysis;
-            loadHistory();
-        }
-        
-        // Load history on page load
-        loadHistory();
+            if (createForm) {
+                createForm.addEventListener('submit', (event) => {
+                    event.preventDefault();
+                    updateCreatePreview();
+                    createFeedback.textContent = 'טיול חדש נוצר! שתפו את הקוד עם החברים כדי להתחיל לתכנן יחד.';
+                    createFeedback.classList.remove('opacity-0');
+                });
+            }
+
+            updateCreatePreview();
+            updateJoinPreview();
+        });
     </script>
 </body>
 </html>
