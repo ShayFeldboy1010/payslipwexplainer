@@ -3,31 +3,41 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TripFlow – חווית תכנון טיולים מודרנית</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <script src="https://unpkg.com/lucide@latest"></script>
-    <style>
-        :root {
-            --primary-600: #4338ca;
-            --primary-500: #6366f1;
-            --primary-400: #818cf8;
-            --accent-500: #06b6d4;
-            --emerald-400: #34d399;
-            --slate-900: #0f172a;
-            --slate-700: #334155;
-            --slate-500: #64748b;
-            --slate-200: #e2e8f0;
-            --white-90: rgba(255, 255, 255, 0.9);
-            --glass-bg: rgba(255, 255, 255, 0.82);
-            --glass-border: rgba(99, 102, 241, 0.18);
-            --shadow-xl: 0 30px 80px rgba(15, 23, 42, 0.15);
-            --radius-xl: 28px;
-        }
+<title>TripFlow — עוזרת תכנון טיולים חכמה</title>
 
-        * {
-            box-sizing: border-box;
+<!-- Google Fonts performance -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+<!-- Tailwind (CDN) -->
+<script src="https://cdn.tailwindcss.com"></script>
+
+<!-- Icons -->
+<script src="https://unpkg.com/lucide@latest"></script>
+
+<style>
+  :root {
+    --primary-600: #4338ca;
+    --primary-500: #6366f1;
+    --primary-400: #81a6f8;
+    --accent-500: #06bb64;
+    --emerald-400: #34d399;
+    --slate-900: #0f172a;
+    --slate-700: #334155;
+    --slate-500: #64748b;
+    --slate-200: #e2e8f0;
+    --white-90: rgba(255, 255, 255, 0.9);
+    --glass-bg: rgba(255, 255, 255, 0.82);
+    --glass-border: rgba(99, 102, 241, 0.18);
+    --shadow-xl: 0 30px 80px rgba(15, 23, 42, 0.15);
+    --radius-xl: 28px;
+    color-scheme: dark; /* אם אתה רוצה ברירת מחדל כהה */
+  }
+
+  * { box-sizing: border-box; }
+</style>
+
         }
 
         body {
@@ -39,6 +49,7 @@
             color: var(--slate-900);
             min-height: 100vh;
         }
+
 
         a {
             color: inherit;
@@ -1024,6 +1035,7 @@
 
             updatePreview();
             joinInput.dispatchEvent(new Event('input'));
+
         });
     </script>
 </body>
