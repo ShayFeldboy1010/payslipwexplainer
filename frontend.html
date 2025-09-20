@@ -3,28 +3,27 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TripFlow – תכנון טיולים מודרני</title>
+    <title>TripFlow – חווית תכנון טיולים מודרנית</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
         :root {
-            --brand-600: #4338ca;
-            --brand-500: #4f46e5;
-            --brand-400: #6366f1;
-            --brand-300: #818cf8;
+            --primary-600: #4338ca;
+            --primary-500: #6366f1;
+            --primary-400: #818cf8;
+            --accent-500: #06b6d4;
             --emerald-400: #34d399;
             --slate-900: #0f172a;
             --slate-700: #334155;
             --slate-500: #64748b;
-            --slate-300: #cbd5f5;
-            --surface-100: rgba(255, 255, 255, 0.88);
-            --surface-80: rgba(255, 255, 255, 0.75);
-            --surface-60: rgba(255, 255, 255, 0.58);
-            --border-soft: rgba(99, 102, 241, 0.18);
-            --shadow-lg: 0 28px 60px rgba(79, 70, 229, 0.15);
-            --radius-xl: 36px;
+            --slate-200: #e2e8f0;
+            --white-90: rgba(255, 255, 255, 0.9);
+            --glass-bg: rgba(255, 255, 255, 0.82);
+            --glass-border: rgba(99, 102, 241, 0.18);
+            --shadow-xl: 0 30px 80px rgba(15, 23, 42, 0.15);
+            --radius-xl: 28px;
         }
 
         * {
@@ -33,93 +32,69 @@
 
         body {
             margin: 0;
-            font-family: 'Rubik', 'Assistant', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            background: radial-gradient(circle at 20% -10%, rgba(99, 102, 241, 0.23), rgba(255, 255, 255, 0)),
-                        radial-gradient(circle at 85% 10%, rgba(56, 189, 248, 0.2), rgba(255, 255, 255, 0)),
-                        linear-gradient(180deg, #f7f8ff 0%, #ffffff 55%, #fdf2ff 100%);
+            font-family: 'Rubik', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: radial-gradient(circle at 20% -10%, rgba(99, 102, 241, 0.2), rgba(255, 255, 255, 0)),
+                        radial-gradient(circle at 80% 0%, rgba(45, 212, 191, 0.18), rgba(255, 255, 255, 0)),
+                        linear-gradient(180deg, #f6f7ff 0%, #ffffff 55%, #fdf2ff 100%);
             color: var(--slate-900);
             min-height: 100vh;
-            position: relative;
         }
 
-        body::before,
-        body::after {
-            content: "";
-            position: fixed;
-            z-index: -2;
-            border-radius: 50%;
-            filter: blur(90px);
-            opacity: 0.55;
+        a {
+            color: inherit;
+            text-decoration: none;
         }
 
-        body::before {
-            width: 480px;
-            height: 480px;
-            top: -220px;
-            right: -160px;
-            background: rgba(99, 102, 241, 0.35);
+        button,
+        input,
+        select {
+            font-family: inherit;
         }
 
-        body::after {
-            width: 380px;
-            height: 380px;
-            bottom: -160px;
-            left: -140px;
-            background: rgba(16, 185, 129, 0.28);
-        }
-
-        .page-wrapper {
+        .page {
             width: min(1180px, 92vw);
             margin: 0 auto;
-            padding: 48px 0 96px;
-            position: relative;
-            z-index: 1;
+            padding: 42px 0 96px;
         }
 
-        header.top-bar {
+        .top-nav {
             display: flex;
-            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
             gap: 24px;
-        }
-
-        @media (min-width: 900px) {
-            header.top-bar {
-                flex-direction: row;
-                justify-content: space-between;
-                align-items: center;
-            }
+            margin-bottom: 54px;
         }
 
         .brand {
             display: flex;
-            gap: 18px;
             align-items: center;
+            gap: 16px;
         }
 
         .brand-badge {
-            width: 58px;
-            height: 58px;
-            border-radius: 26px;
-            background: linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(129, 140, 248, 0.45));
+            width: 54px;
+            height: 54px;
+            border-radius: 22px;
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.12), rgba(129, 140, 248, 0.4));
             display: grid;
             place-items: center;
-            color: var(--brand-500);
+            color: var(--primary-500);
             box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.65);
         }
 
         .brand h1 {
-            font-size: clamp(1.6rem, 2vw + 1rem, 2.3rem);
             margin: 0;
+            font-size: clamp(1.5rem, 1.1vw + 1.4rem, 2.2rem);
             font-weight: 600;
         }
 
         .brand p {
-            margin: 6px 0 0;
+            margin: 4px 0 0;
             color: var(--slate-500);
             font-size: 0.95rem;
         }
 
-        .top-actions {
+        .nav-actions {
             display: flex;
             gap: 12px;
             flex-wrap: wrap;
@@ -132,7 +107,7 @@
             justify-content: center;
             gap: 8px;
             border-radius: 999px;
-            padding: 12px 22px;
+            padding: 11px 22px;
             font-weight: 600;
             font-size: 0.95rem;
             cursor: pointer;
@@ -140,1131 +115,915 @@
             transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.3s ease;
         }
 
-        .ghost-btn {
-            background: rgba(255, 255, 255, 0.55);
-            border-color: rgba(99, 102, 241, 0.22);
-            color: var(--brand-500);
-            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7), 0 10px 25px rgba(99, 102, 241, 0.05);
-        }
-
-        .ghost-btn:hover {
-            transform: translateY(-1px);
-            background: rgba(255, 255, 255, 0.75);
-        }
-
         .primary-btn {
-            background: linear-gradient(135deg, var(--brand-500), var(--brand-300));
-            color: white;
-            box-shadow: 0 16px 35px rgba(79, 70, 229, 0.25);
+            background: linear-gradient(135deg, var(--primary-500), var(--primary-400));
+            color: #fff;
+            box-shadow: 0 20px 40px rgba(99, 102, 241, 0.25);
         }
 
         .primary-btn:hover {
             transform: translateY(-1px);
-            box-shadow: 0 22px 38px rgba(79, 70, 229, 0.3);
+        }
+
+        .ghost-btn {
+            background: rgba(255, 255, 255, 0.62);
+            border-color: rgba(99, 102, 241, 0.18);
+            color: var(--primary-500);
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.75), 0 12px 25px rgba(15, 23, 42, 0.08);
+        }
+
+        .ghost-btn:hover {
+            transform: translateY(-1px);
+            background: rgba(255, 255, 255, 0.82);
+        }
+
+        .section-kicker {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 14px;
+            background: rgba(99, 102, 241, 0.12);
+            border-radius: 999px;
+            font-size: 0.82rem;
+            color: var(--primary-500);
+            font-weight: 600;
         }
 
         .hero {
-            margin-top: 40px;
-            padding: clamp(32px, 5vw, 56px);
-            background: radial-gradient(circle at 5% 15%, rgba(255, 255, 255, 0.8), rgba(255, 255, 255, 0)) 0 0 / 240px 240px,
-                        linear-gradient(135deg, rgba(99, 102, 241, 0.12), rgba(129, 140, 248, 0.16));
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 38px;
+            padding: 46px;
             border-radius: var(--radius-xl);
-            box-shadow: var(--shadow-lg);
-            border: 1px solid rgba(99, 102, 241, 0.12);
-            backdrop-filter: blur(22px);
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            box-shadow: var(--shadow-xl);
             position: relative;
             overflow: hidden;
-            display: grid;
-            gap: clamp(32px, 4vw, 48px);
         }
 
+        .hero::before,
         .hero::after {
             content: "";
             position: absolute;
-            inset: 0;
-            background: radial-gradient(circle at 85% 20%, rgba(59, 130, 246, 0.18), transparent 55%),
-                        radial-gradient(circle at 20% 85%, rgba(16, 185, 129, 0.18), transparent 50%);
-            mix-blend-mode: screen;
-            opacity: 0.85;
+            border-radius: 50%;
+            filter: blur(90px);
+            opacity: 0.55;
+            pointer-events: none;
         }
 
-        @media (min-width: 980px) {
-            .hero {
-                grid-template-columns: 1.15fr 0.85fr;
-                align-items: center;
-            }
+        .hero::before {
+            width: 320px;
+            height: 320px;
+            background: rgba(99, 102, 241, 0.25);
+            top: -140px;
+            left: -120px;
         }
 
-        .hero-content {
+        .hero::after {
+            width: 280px;
+            height: 280px;
+            background: rgba(45, 212, 191, 0.22);
+            bottom: -140px;
+            right: -110px;
+        }
+
+        .hero-copy {
             position: relative;
             z-index: 1;
         }
 
-        .hero-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            padding: 8px 16px;
-            border-radius: 999px;
-            font-size: 0.8rem;
-            font-weight: 600;
-            letter-spacing: 0.12em;
-            text-transform: uppercase;
-            background: rgba(255, 255, 255, 0.7);
-            color: var(--brand-600);
-            border: 1px solid rgba(99, 102, 241, 0.18);
+        .hero-copy h2 {
+            margin: 18px 0 16px;
+            font-size: clamp(2rem, 1.4vw + 2rem, 3rem);
+            line-height: 1.15;
         }
 
-        .hero h2 {
-            margin: 22px 0 16px;
-            font-size: clamp(2.1rem, 2vw + 2rem, 3.1rem);
-            line-height: 1.2;
-            font-weight: 600;
-            color: var(--slate-900);
-        }
-
-        .hero p {
-            margin: 0 0 26px;
-            color: rgba(15, 23, 42, 0.78);
-            font-size: 1.05rem;
-            max-width: 32ch;
+        .hero-copy p {
+            margin: 0 0 24px;
+            color: var(--slate-500);
+            font-size: 1.02rem;
+            max-width: 460px;
         }
 
         .hero-actions {
             display: flex;
             gap: 12px;
             flex-wrap: wrap;
+            margin-bottom: 28px;
         }
 
         .hero-stats {
-            margin-top: 40px;
             display: grid;
-            gap: 16px;
-            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 18px;
         }
 
         .stat-card {
-            padding: 18px 20px;
-            border-radius: 22px;
-            background: rgba(255, 255, 255, 0.78);
-            border: 1px solid rgba(99, 102, 241, 0.12);
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-
-        .stat-card span:first-child {
-            font-size: 0.75rem;
-            letter-spacing: 0.08em;
-            color: var(--slate-500);
-            font-weight: 600;
+            padding: 18px;
+            border-radius: 20px;
+            background: rgba(255, 255, 255, 0.76);
+            border: 1px solid rgba(148, 163, 184, 0.2);
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.65);
         }
 
         .stat-card strong {
-            font-size: 1.6rem;
-            color: var(--slate-900);
+            display: block;
+            font-size: 1.7rem;
+            color: var(--primary-600);
+            margin-bottom: 4px;
+        }
+
+        .stat-card span {
+            color: var(--slate-500);
+            font-size: 0.9rem;
         }
 
         .hero-preview {
             position: relative;
             z-index: 1;
-        }
-
-        .hero-preview-card {
-            background: var(--surface-100);
-            border-radius: 30px;
-            padding: 26px;
-            box-shadow: 0 24px 45px rgba(15, 23, 42, 0.08);
-            border: 1px solid rgba(148, 163, 184, 0.18);
-            display: grid;
-            gap: 18px;
-        }
-
-        .hero-preview-cover {
-            position: relative;
-            border-radius: 24px;
-            padding: 22px;
-            overflow: hidden;
-            color: white;
-            min-height: 160px;
             display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-        }
-
-        .hero-preview-cover::before {
-            content: "";
-            position: absolute;
-            inset: 0;
-            background: linear-gradient(135deg, rgba(79, 70, 229, 0.9), rgba(99, 102, 241, 0.55));
-        }
-
-        .hero-preview-cover > * {
-            position: relative;
-            z-index: 1;
-        }
-
-        .hero-preview-cover h3 {
-            margin: 0;
-            font-size: 1.35rem;
-            line-height: 1.4;
-        }
-
-        .preview-meta {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            font-size: 0.85rem;
-            opacity: 0.9;
-        }
-
-        .preview-meta span {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-        }
-
-        .preview-users {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .avatar-stack {
-            display: inline-flex;
-            align-items: center;
-        }
-
-        .avatar {
-            width: 36px;
-            height: 36px;
-            border-radius: 50%;
-            display: grid;
-            place-items: center;
-            font-size: 0.9rem;
-            font-weight: 600;
-            border: 2px solid rgba(255, 255, 255, 0.65);
-            background: rgba(255, 255, 255, 0.25);
-            margin-left: -10px;
-        }
-
-        .avatar:first-child {
-            margin-left: 0;
-        }
-
-        .preview-divider {
-            height: 1px;
-            background: rgba(148, 163, 184, 0.25);
-            width: 100%;
-        }
-
-        .preview-info {
-            display: flex;
-            justify-content: space-between;
-            font-size: 0.9rem;
-        }
-
-        .badge-soft {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            padding: 6px 12px;
-            border-radius: 999px;
-            background: rgba(59, 130, 246, 0.12);
-            color: #2563eb;
-            font-size: 0.82rem;
-            font-weight: 600;
-        }
-
-        main {
-            margin-top: 56px;
-            display: grid;
-            gap: 40px;
-        }
-
-        .panels-grid {
-            display: grid;
-            gap: 24px;
-        }
-
-        @media (min-width: 980px) {
-            .panels-grid {
-                grid-template-columns: 1.15fr 0.85fr;
-            }
-        }
-
-        .panel {
-            background: var(--surface-80);
-            border-radius: 30px;
-            padding: clamp(28px, 4vw, 36px);
-            border: 1px solid var(--border-soft);
-            box-shadow: 0 18px 45px rgba(15, 23, 42, 0.06);
-            position: relative;
-            overflow: hidden;
-        }
-
-        .panel::before {
-            content: "";
-            position: absolute;
-            inset: 0;
-            background: linear-gradient(135deg, rgba(99, 102, 241, 0.08), rgba(129, 140, 248, 0.18));
-            opacity: 0;
-            transition: opacity 0.3s ease;
-            z-index: 0;
-        }
-
-        .panel:hover::before {
-            opacity: 1;
-        }
-
-        .panel > * {
-            position: relative;
-            z-index: 1;
-        }
-
-        .panel h3 {
-            margin: 0;
-            font-size: 1.6rem;
-            font-weight: 600;
-            color: var(--slate-900);
-        }
-
-        .panel p.description {
-            margin: 12px 0 26px;
-            color: rgba(15, 23, 42, 0.68);
-            font-size: 0.98rem;
-        }
-
-        .create-layout {
-            display: grid;
-            gap: 22px;
-        }
-
-        @media (min-width: 960px) {
-            .create-layout {
-                grid-template-columns: 1fr 0.9fr;
-                align-items: stretch;
-            }
-        }
-
-        .input-grid {
-            display: grid;
-            gap: 18px;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-        }
-
-        .input-field {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-
-        .input-field label {
-            font-size: 0.85rem;
-            font-weight: 600;
-            color: var(--slate-700);
-        }
-
-        .input-field input,
-        .input-field textarea,
-        .input-field select {
-            border-radius: 18px;
-            border: 1px solid rgba(148, 163, 184, 0.35);
-            padding: 14px 16px;
-            font-size: 0.95rem;
-            background: rgba(248, 250, 255, 0.95);
-            transition: border 0.2s ease, box-shadow 0.2s ease;
-            font-family: inherit;
-        }
-
-        .input-field textarea {
-            min-height: 110px;
-            resize: vertical;
-        }
-
-        .input-field input:focus,
-        .input-field textarea:focus,
-        .input-field select:focus {
-            outline: none;
-            border-color: rgba(79, 70, 229, 0.55);
-            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.18);
-        }
-
-        .form-actions {
-            margin-top: 24px;
-            display: flex;
-            flex-wrap: wrap;
-            gap: 12px;
-        }
-
-        .secondary-btn {
-            border-radius: 16px;
-            padding: 12px 18px;
-            border: 1px dashed rgba(79, 70, 229, 0.45);
-            background: rgba(255, 255, 255, 0.6);
-            font-weight: 600;
-            color: var(--brand-500);
-            cursor: pointer;
-        }
-
-        .secondary-btn:hover {
-            background: rgba(99, 102, 241, 0.08);
+            justify-content: flex-end;
+            align-items: stretch;
         }
 
         .preview-card {
-            background: rgba(255, 255, 255, 0.9);
+            width: min(100%, 410px);
             border-radius: 26px;
-            border: 1px solid rgba(148, 163, 184, 0.22);
-            padding: 24px;
-            display: grid;
-            gap: 18px;
-            box-shadow: 0 20px 35px rgba(15, 23, 42, 0.08);
-        }
-
-        .preview-card header {
+            background: linear-gradient(180deg, rgba(15, 23, 42, 0.92), rgba(15, 23, 42, 0.78));
+            color: #f8fafc;
+            padding: 26px;
             display: flex;
-            align-items: center;
+            flex-direction: column;
+            gap: 20px;
+            box-shadow: 0 25px 40px rgba(15, 23, 42, 0.35);
+        }
+
+        .preview-header {
+            display: flex;
             justify-content: space-between;
-            font-size: 0.85rem;
-            color: var(--slate-500);
+            align-items: flex-start;
         }
 
-        .preview-chip {
-            padding: 6px 12px;
-            border-radius: 999px;
-            background: rgba(99, 102, 241, 0.12);
-            color: var(--brand-500);
-            font-weight: 600;
-            font-size: 0.78rem;
-        }
-
-        .preview-body h4 {
-            margin: 0;
-            font-size: 1.35rem;
-        }
-
-        .preview-body p {
+        .preview-header h3 {
             margin: 8px 0 0;
-            color: rgba(15, 23, 42, 0.68);
-            font-size: 0.95rem;
+            font-size: 1.5rem;
         }
 
-        .preview-footer {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            font-size: 0.88rem;
-            color: var(--slate-500);
-        }
-
-        .highlight-text {
-            color: var(--brand-500);
-            font-weight: 600;
-        }
-
-        .join-card {
-            background: var(--surface-60);
-        }
-
-        .join-card .sub-card {
-            margin-top: 24px;
-            padding: 18px;
-            border-radius: 20px;
-            background: rgba(248, 250, 255, 0.9);
-            border: 1px solid rgba(148, 163, 184, 0.25);
-        }
-
-        .join-card .sub-card strong {
-            font-size: 0.92rem;
-            color: var(--slate-700);
-        }
-
-        .code-inputs {
-            margin-top: 18px;
-            display: flex;
-            gap: 12px;
-            justify-content: space-between;
-        }
-
-        .code-inputs input {
-            width: 100%;
-            flex: 1;
-            padding: 16px 0;
-            text-align: center;
-            font-size: 1.2rem;
-            font-weight: 700;
-            border-radius: 18px;
-            border: 1px solid rgba(148, 163, 184, 0.4);
-            background: rgba(255, 255, 255, 0.96);
-            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5);
-            transition: transform 0.2s ease, border 0.2s ease;
-            text-transform: uppercase;
-        }
-
-        .code-inputs input:focus {
-            outline: none;
-            border-color: rgba(79, 70, 229, 0.7);
-            transform: translateY(-2px);
-            box-shadow: 0 15px 28px rgba(99, 102, 241, 0.12);
-        }
-
-        .code-actions {
-            margin-top: 18px;
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-        }
-
-        .text-button {
-            border: none;
-            background: transparent;
-            color: var(--brand-500);
-            font-weight: 600;
-            cursor: pointer;
+        .preview-badge {
             display: inline-flex;
             align-items: center;
             gap: 6px;
-            padding: 10px 14px;
-            border-radius: 12px;
+            padding: 6px 14px;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.12);
+            font-size: 0.85rem;
         }
 
-        .text-button:hover {
-            background: rgba(99, 102, 241, 0.08);
+        .preview-stops {
+            display: grid;
+            gap: 16px;
         }
 
-        .section-head {
+        .preview-stop {
             display: flex;
-            flex-direction: column;
             gap: 12px;
+            align-items: center;
         }
 
-        .section-head h3 {
-            margin: 0;
-            font-size: 1.65rem;
-            font-weight: 600;
+        .preview-stop i {
+            width: 36px;
+            height: 36px;
+            border-radius: 12px;
+            display: grid;
+            place-items: center;
+            background: rgba(148, 163, 184, 0.16);
+            color: #cbd5f5;
         }
 
-        .section-head p {
+        .preview-stop strong {
+            display: block;
+            font-size: 1.05rem;
+        }
+
+        .preview-stop span {
+            font-size: 0.86rem;
+            color: rgba(226, 232, 240, 0.75);
+        }
+
+        .trip-showcase {
+            margin-top: 80px;
+        }
+
+        .section-header {
+            max-width: 620px;
+        }
+
+        .section-header h2 {
+            margin: 18px 0 10px;
+            font-size: clamp(1.8rem, 1vw + 1.8rem, 2.4rem);
+        }
+
+        .section-header p {
             margin: 0;
-            color: rgba(15, 23, 42, 0.65);
+            color: var(--slate-500);
+            font-size: 1rem;
         }
 
         .trip-grid {
-            margin-top: 28px;
+            margin-top: 34px;
             display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
             gap: 22px;
-            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
         }
 
         .trip-card {
-            background: rgba(255, 255, 255, 0.88);
-            border-radius: 26px;
-            padding: 22px;
+            background: var(--glass-bg);
+            border-radius: 24px;
+            padding: 24px;
             border: 1px solid rgba(148, 163, 184, 0.2);
-            display: grid;
-            gap: 16px;
-            transition: transform 0.25s ease, box-shadow 0.25s ease;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .trip-card::after {
-            content: "";
-            position: absolute;
-            inset: 0;
-            opacity: 0;
-            background: linear-gradient(135deg, rgba(99, 102, 241, 0.08), rgba(129, 140, 248, 0.12));
-            transition: opacity 0.25s ease;
-            z-index: 0;
-        }
-
-        .trip-card:hover {
-            transform: translateY(-6px);
-            box-shadow: 0 28px 40px rgba(15, 23, 42, 0.08);
-        }
-
-        .trip-card:hover::after {
-            opacity: 1;
-        }
-
-        .trip-card > * {
-            position: relative;
-            z-index: 1;
+            box-shadow: 0 18px 35px rgba(15, 23, 42, 0.08);
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
         }
 
         .trip-card header {
             display: flex;
             justify-content: space-between;
-            align-items: center;
-            font-size: 0.85rem;
-            color: var(--slate-500);
-        }
-
-        .status-chip {
-            padding: 6px 12px;
-            border-radius: 999px;
-            font-weight: 600;
-            font-size: 0.78rem;
-        }
-
-        .status-chip.live {
-            background: rgba(34, 197, 94, 0.12);
-            color: #16a34a;
-        }
-
-        .status-chip.planning {
-            background: rgba(59, 130, 246, 0.12);
-            color: #2563eb;
-        }
-
-        .status-chip.wrapup {
-            background: rgba(249, 115, 22, 0.12);
-            color: #ea580c;
-        }
-
-        .trip-card h4 {
-            margin: 4px 0 8px;
-            font-size: 1.25rem;
+            align-items: flex-start;
+            gap: 12px;
         }
 
         .trip-meta {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            font-size: 0.9rem;
+            display: grid;
+            gap: 8px;
+            font-size: 0.92rem;
             color: var(--slate-500);
         }
 
-        .progress {
-            position: relative;
-            height: 7px;
+        .trip-progress {
+            height: 6px;
             border-radius: 999px;
-            background: rgba(148, 163, 184, 0.25);
+            background: rgba(99, 102, 241, 0.15);
             overflow: hidden;
         }
 
-        .progress span {
-            position: absolute;
-            inset: 0;
-            width: var(--value, 65%);
-            background: linear-gradient(135deg, rgba(79, 70, 229, 0.9), rgba(129, 140, 248, 0.7));
+        .trip-progress span {
+            display: block;
+            height: 100%;
+            border-radius: inherit;
+            background: linear-gradient(135deg, var(--primary-500), var(--accent-500));
         }
 
-        .card-footer {
+        .trip-card footer {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            font-size: 0.85rem;
-            color: var(--slate-500);
+            gap: 12px;
         }
 
-        .link-action {
+        .chip {
             display: inline-flex;
             align-items: center;
             gap: 6px;
-            color: var(--brand-500);
+            border-radius: 999px;
+            padding: 6px 14px;
+            background: rgba(99, 102, 241, 0.12);
+            color: var(--primary-500);
+            font-size: 0.85rem;
+            border: 1px solid transparent;
+            cursor: default;
+        }
+
+        .planner {
+            margin-top: 80px;
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 28px;
+        }
+
+        .glass-card {
+            background: var(--glass-bg);
+            border-radius: 26px;
+            padding: 30px;
+            border: 1px solid rgba(148, 163, 184, 0.2);
+            box-shadow: 0 18px 40px rgba(15, 23, 42, 0.1);
+        }
+
+        .create-form {
+            display: grid;
+            gap: 20px;
+        }
+
+        .form-group {
+            display: grid;
+            gap: 10px;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 18px;
+        }
+
+        label {
+            font-weight: 600;
+            font-size: 0.92rem;
+            color: var(--slate-700);
+        }
+
+        input[type="text"],
+        input[type="date"],
+        input[type="number"] {
+            padding: 12px 16px;
+            border-radius: 14px;
+            border: 1px solid rgba(99, 102, 241, 0.18);
+            background: rgba(255, 255, 255, 0.9);
+            font-size: 0.96rem;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        input[type="text"]:focus,
+        input[type="date"]:focus,
+        input[type="number"]:focus {
+            outline: none;
+            border-color: var(--primary-500);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.18);
+        }
+
+        input[type="range"] {
+            accent-color: var(--primary-500);
+        }
+
+        .range-field {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .range-field span {
+            min-width: 88px;
+            text-align: center;
+            font-size: 0.9rem;
+            color: var(--primary-500);
             font-weight: 600;
         }
 
-        footer {
-            margin-top: 64px;
+        .style-select {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .style-select .chip {
+            cursor: pointer;
+            background: rgba(99, 102, 241, 0.08);
+            border-color: transparent;
+            transition: all 0.2s ease;
+        }
+
+        .style-select .chip.selected {
+            background: rgba(99, 102, 241, 0.18);
+            border-color: rgba(99, 102, 241, 0.28);
+            color: var(--primary-600);
+        }
+
+        .primary-btn.full-width {
+            width: 100%;
+            justify-content: center;
+        }
+
+        .trip-preview {
+            margin-top: 10px;
+            background: linear-gradient(180deg, rgba(67, 56, 202, 0.12), rgba(14, 165, 233, 0.12));
+            border: 1px solid rgba(99, 102, 241, 0.25);
+            border-radius: 22px;
+            padding: 24px;
+            display: grid;
+            gap: 16px;
+        }
+
+        .trip-preview header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .preview-details {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+            display: grid;
+            gap: 12px;
+        }
+
+        .preview-details li {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: var(--slate-700);
+            font-size: 0.95rem;
+        }
+
+        .preview-details i {
+            width: 28px;
+            height: 28px;
+            border-radius: 10px;
+            display: grid;
+            place-items: center;
+            background: rgba(99, 102, 241, 0.16);
+            color: var(--primary-500);
+        }
+
+        .join-card .join-input {
+            display: flex;
+            gap: 12px;
+            align-items: stretch;
+        }
+
+        .join-card input[type="text"] {
+            flex: 1;
+            font-size: 1.05rem;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+        }
+
+        .join-display {
+            margin-top: 12px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            letter-spacing: 0.22em;
+            color: var(--primary-600);
+            background: rgba(99, 102, 241, 0.1);
+            border-radius: 16px;
+            padding: 12px 18px;
             text-align: center;
-            color: rgba(15, 23, 42, 0.55);
+        }
+
+        .invite-list {
+            margin-top: 26px;
+            display: grid;
+            gap: 14px;
+        }
+
+        .invite-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 16px;
+            padding: 14px 18px;
+            border-radius: 18px;
+            background: rgba(255, 255, 255, 0.72);
+            border: 1px solid rgba(148, 163, 184, 0.18);
+        }
+
+        .invite-item span {
+            display: block;
+            color: var(--slate-500);
             font-size: 0.9rem;
         }
 
-        @media (max-width: 640px) {
-            .brand {
+        footer {
+            margin-top: 96px;
+            text-align: center;
+            color: var(--slate-500);
+            font-size: 0.85rem;
+        }
+
+        @media (max-width: 1024px) {
+            .hero {
+                grid-template-columns: 1fr;
+                padding: 38px;
+            }
+
+            .hero-preview {
+                justify-content: center;
+            }
+
+            .hero-stats {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+
+            .trip-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+
+            .planner {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 680px) {
+            .top-nav {
                 flex-direction: column;
                 align-items: flex-start;
             }
 
             .hero {
-                padding: 28px;
+                padding: 30px 26px;
             }
 
             .hero-stats {
-                grid-template-columns: 1fr 1fr;
+                grid-template-columns: 1fr;
             }
 
-            .code-inputs {
-                gap: 8px;
+            .trip-grid {
+                grid-template-columns: 1fr;
             }
 
-            .code-inputs input {
-                padding: 14px 0;
-                font-size: 1.05rem;
+            .form-row {
+                grid-template-columns: 1fr;
             }
 
-            .trip-card {
-                padding: 18px;
+            .join-card .join-input {
+                flex-direction: column;
+            }
+
+            .primary-btn,
+            .ghost-btn {
+                width: 100%;
             }
         }
     </style>
 </head>
 <body>
-    <div class="page-wrapper">
-        <header class="top-bar">
+    <div class="page">
+        <header class="top-nav">
             <div class="brand">
-                <span class="brand-badge">
-                    <i data-lucide="sparkles" class="icon"></i>
-                </span>
+                <div class="brand-badge">
+                    <i data-lucide="mountain" class="w-6 h-6"></i>
+                </div>
                 <div>
                     <h1>TripFlow</h1>
-                    <p>הדרך הקלה לשתף הוצאות, מסלולים וחוויות עם החברים למסע.</p>
+                    <p>הדרך החכמה לתאם טיולים קבוצתיים</p>
                 </div>
             </div>
-            <div class="top-actions">
-                <button class="ghost-btn">
-                    <i data-lucide="history"></i>
-                    המשך לטיול האחרון
-                </button>
-                <button class="primary-btn">
-                    <i data-lucide="plus"></i>
-                    התחלת טיול חדש
-                </button>
+            <div class="nav-actions">
+                <button class="ghost-btn"><i data-lucide="sparkles"></i> איך זה עובד?</button>
+                <button class="ghost-btn"><i data-lucide="compass"></i> טיולים פתוחים</button>
+                <button class="primary-btn"><i data-lucide="plus"></i> צור טיול חדש</button>
             </div>
         </header>
 
-        <section class="hero">
-            <div class="hero-content">
-                <span class="hero-badge">
-                    <i data-lucide="compass"></i>
-                    מסע חכם מתחיל כאן
-                </span>
-                <h2>עיצוב חדש ומזמין לניהול הטיולים המשותפים שלכם.</h2>
-                <p>
-                    אספו רעיונות, שתפו הוצאות ונהלו את כל המשימות בקלות. TripFlow דואג שהחוויה שלכם תתחיל בתחושה נכונה כבר מהמסך הראשון.
-                </p>
-                <div class="hero-actions">
-                    <button class="primary-btn">
-                        <i data-lucide="sparkles"></i>
-                        יצירת טיול מותאם
-                    </button>
-                    <button class="ghost-btn">
-                        <i data-lucide="users"></i>
-                        הזמינו חברים להצטרף
-                    </button>
-                </div>
-
-                <div class="hero-stats">
-                    <div class="stat-card">
-                        <span>טיולים פעילים</span>
-                        <strong>4</strong>
-                        <span>המסעות של השבוע</span>
-                    </div>
-                    <div class="stat-card">
-                        <span>משתתפים מאושרים</span>
-                        <strong>27</strong>
-                        <span>הצטרפו לחוויות חדשות</span>
-                    </div>
-                    <div class="stat-card">
-                        <span>תקציבים בשיתוף</span>
-                        <strong>₪18,450</strong>
-                        <span>באחריות TripFlow</span>
-                    </div>
-                </div>
-            </div>
-
-            <div class="hero-preview">
-                <div class="hero-preview-card">
-                    <div class="hero-preview-cover">
-                        <div class="preview-meta">
-                            <span>
-                                <i data-lucide="map-pin"></i>
-                                נחל עין גדי
-                            </span>
-                            <span>
-                                <i data-lucide="calendar"></i>
-                                22.09.2025
-                            </span>
-                        </div>
-                        <h3>סופ"ש מרענן במדבר</h3>
-                        <div class="preview-users">
-                            <div class="avatar-stack" aria-hidden="true">
-                                <span class="avatar" style="background: rgba(255,255,255,0.35); color: #1e293b;">א</span>
-                                <span class="avatar" style="background: rgba(255,255,255,0.3); color: #1e293b;">ג</span>
-                                <span class="avatar" style="background: rgba(255,255,255,0.25); color: #1e293b;">ל</span>
-                            </div>
-                            <span>4 חברים • 12 משימות</span>
-                        </div>
-                    </div>
-                    <div class="preview-divider"></div>
-                    <div class="preview-info">
-                        <span class="badge-soft">
-                            <i data-lucide="list-checks"></i>
-                            87% הושלם
-                        </span>
-                        <span>תקציב: ₪3,200</span>
-                    </div>
-                </div>
-            </div>
-        </section>
-
         <main>
-            <section class="panels-grid">
-                <article class="panel">
-                    <header>
-                        <h3>צור טיול חדש</h3>
-                        <p class="description">התחילו מסע חדש, הזמינו את החברים המתאימים וקבלו הצצה למסע עוד לפני שהוא יוצא לדרך.</p>
-                    </header>
-                    <div class="create-layout">
-                        <form class="create-form" autocomplete="off">
-                            <div class="input-grid">
-                                <div class="input-field">
-                                    <label for="trip-name">שם הטיול</label>
-                                    <input type="text" id="trip-name" name="trip-name" placeholder="לדוגמה: חופשה משפחתית בגליל" maxlength="60">
-                                </div>
-                                <div class="input-field">
-                                    <label for="trip-destination">יעד מרכזי</label>
-                                    <input type="text" id="trip-destination" name="trip-destination" placeholder="לאן נוסעים?">
-                                </div>
-                                <div class="input-field">
-                                    <label for="trip-date">תאריך יציאה</label>
-                                    <input type="date" id="trip-date" name="trip-date">
-                                </div>
-                                <div class="input-field">
-                                    <label for="trip-budget">תקציב משוער</label>
-                                    <input type="number" id="trip-budget" name="trip-budget" placeholder="₪">
-                                </div>
-                            </div>
-                            <div class="input-field" style="margin-top: 18px;">
-                                <label for="trip-description">תיאור קצר</label>
-                                <textarea id="trip-description" name="trip-description" placeholder="ספרו בקצרה מה מתוכנן בטיול הזה..." maxlength="220"></textarea>
-                            </div>
-                            <div class="form-actions">
-                                <button type="button" class="primary-btn">
-                                    <i data-lucide="wand-2"></i>
-                                    צור טיול עם תבנית
-                                </button>
-                                <button type="button" class="secondary-btn">
-                                    <i data-lucide="share"></i>
-                                    שתף להזמנת חברים
-                                </button>
-                            </div>
-                        </form>
-                        <aside class="preview-card" aria-live="polite">
-                            <header>
-                                <span id="preview-date">בחרו תאריך</span>
-                                <span class="preview-chip">טיול חדש</span>
-                            </header>
-                            <div class="preview-body">
-                                <h4 id="preview-trip-name">טיול ללא שם עדיין</h4>
-                                <p id="preview-description">כאן תופיע תצוגה מקדימה למסע שלכם. מלאו את הפרטים כדי לראות איך זה נראה.</p>
-                            </div>
-                            <div class="preview-footer">
-                                <span>
-                                    <i data-lucide="map"></i>
-                                    <span id="preview-destination">יעד עדיין לא נבחר</span>
-                                </span>
-                                <span>
-                                    <span class="highlight-text" id="preview-budget">₪0</span>
-                                    • תקציב התחלתי
-                                </span>
-                            </div>
-                        </aside>
+            <section class="hero">
+                <div class="hero-copy">
+                    <span class="section-kicker"><i data-lucide="sparkles"></i> חדש ב-TripFlow</span>
+                    <h2>כל תכנון טיול הופך לסיפור שמתחיל בקליק אחד</h2>
+                    <p>חברו את כל החבורה, הגדירו תקציבים והעדפות, וקבלו מסלול חכם שמתעדכן בזמן אמת. TripFlow הופך כאבי ראש לשרטוט מדויק של חלום משותף.</p>
+                    <div class="hero-actions">
+                        <button class="primary-btn"><i data-lucide="plane"></i> התחלת תכנון</button>
+                        <button class="ghost-btn"><i data-lucide="play"></i> צפייה בתצוגה מקדימה</button>
                     </div>
-                </article>
-
-                <article class="panel join-card">
-                    <header>
-                        <h3>הצטרפות לטיול קיים</h3>
-                        <p class="description">קיבלתם קוד מחבר? הזינו אותו כאן ותוכלו להצטרף מיד למרחב הטיול, לצפות בעדכונים ולהוסיף רעיונות משלכם.</p>
-                    </header>
-                    <div>
-                        <label for="code-1" class="input-field" style="margin-bottom: 0;">
-                            <span>קוד הצטרפות</span>
-                        </label>
-                        <div class="code-inputs" role="group" aria-labelledby="code-1">
-                            <input id="code-1" class="join-code-input" inputmode="numeric" maxlength="4" aria-label="חלק ראשון של הקוד">
-                            <input id="code-2" class="join-code-input" inputmode="numeric" maxlength="4" aria-label="חלק שני של הקוד">
-                            <input id="code-3" class="join-code-input" inputmode="numeric" maxlength="4" aria-label="חלק שלישי של הקוד">
+                    <div class="hero-stats">
+                        <div class="stat-card">
+                            <strong>128</strong>
+                            <span>טיולים פעילים השבוע</span>
                         </div>
-                        <div class="code-actions">
-                            <button type="button" class="text-button" id="paste-code">
-                                <i data-lucide="clipboard"></i>
-                                הדבק קוד מהלוח
-                            </button>
-                            <button type="button" class="text-button" id="copy-invite">
-                                <i data-lucide="copy"></i>
-                                שתפו קוד לדוגמה
-                            </button>
+                        <div class="stat-card">
+                            <strong>4,620</strong>
+                            <span>מטיילים מתאמים יחד</span>
+                        </div>
+                        <div class="stat-card">
+                            <strong>92%</strong>
+                            <span>אמרו שהחיסכון גדל</span>
                         </div>
                     </div>
-                    <div class="sub-card">
-                        <strong>איך זה עובד?</strong>
-                        <p style="margin: 10px 0 0; color: rgba(15, 23, 42, 0.68); font-size: 0.92rem;">
-                            החברים שכבר בטיול יקבלו התראה כשמצטרפים חדשים מגיעים. תוכלו לעדכן משתתפים, להתעדכן במשימות ולהוסיף הוצאות בלחיצה אחת.
-                        </p>
-                        <ul style="margin: 14px 0 0; padding-right: 18px; color: rgba(15, 23, 42, 0.68); font-size: 0.9rem;">
-                            <li>צפו בלוח זמנים ובמסלולים המומלצים</li>
-                            <li>שתפו טיפים, מסמכים וקבצי מדיה</li>
-                            <li>מעקב חי אחר הוצאות והתחשבנויות</li>
-                        </ul>
+                </div>
+                <div class="hero-preview">
+                    <div class="preview-card">
+                        <div class="preview-header">
+                            <div>
+                                <span class="preview-badge"><i data-lucide="users"></i> הקבוצה של מאיה</span>
+                                <h3>חופי אמלפי</h3>
+                                <span style="color: rgba(226,232,240,0.75); font-size: 0.9rem;">14 - 20 בספטמבר · 6 חברים</span>
+                            </div>
+                            <i data-lucide="waves" style="opacity: 0.85;"></i>
+                        </div>
+                        <div class="preview-stops">
+                            <div class="preview-stop">
+                                <i data-lucide="sun"></i>
+                                <div>
+                                    <strong>Positano</strong>
+                                    <span>בוקר חופים + שיט פרטי</span>
+                                </div>
+                            </div>
+                            <div class="preview-stop">
+                                <i data-lucide="mountain"></i>
+                                <div>
+                                    <strong>Ravello</strong>
+                                    <span>סיור כרמים וגינה מוזיקלית</span>
+                                </div>
+                            </div>
+                            <div class="preview-stop">
+                                <i data-lucide="sparkles"></i>
+                                <div>
+                                    <strong>Amalfi by Night</strong>
+                                    <span>טעימות ליים וקוקטייל שקיעה</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="preview-stops">
+                            <div class="preview-stop">
+                                <i data-lucide="wallet"></i>
+                                <div>
+                                    <strong>תקציב נשאר</strong>
+                                    <span>₪2,480 מתוך ₪14,400</span>
+                                </div>
+                            </div>
+                            <div class="preview-stop">
+                                <i data-lucide="check-circle"></i>
+                                <div>
+                                    <strong>משימות</strong>
+                                    <span>טיסות הושלמו · מלון בבחינה</span>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                </article>
+                </div>
             </section>
 
-            <section>
-                <div class="section-head">
-                    <h3>טיולים שיצאו לדרך</h3>
-                    <p>קבלו הצצה למסעות הפופולריים ביותר בקהילה והצטרפו אליהם בלחיצה אחת.</p>
+            <section class="trip-showcase">
+                <div class="section-header">
+                    <span class="section-kicker"><i data-lucide="globe-2"></i> טיולי הקהילה</span>
+                    <h2>בחרו את ההרפתקה הבאה והצטרפו בכמה שניות</h2>
+                    <p>הטיולים הפופולריים של השבוע מוצגים עם התקדמות, תקציב וזמן יציאה מדויק. הכניסה לקבוצה מתבצעת בלחיצה אחת.</p>
                 </div>
                 <div class="trip-grid">
                     <article class="trip-card">
                         <header>
-                            <span>15.08.2025</span>
-                            <span class="status-chip live">
-                                <i data-lucide="activity"></i>
-                                פעיל עכשיו
-                            </span>
-                        </header>
-                        <h4>הרפתקה קולינרית בירושלים</h4>
-                        <p style="margin: 0; color: rgba(15, 23, 42, 0.65); font-size: 0.92rem;">
-                            סיור טעימות בשוק מחנה יהודה, סדנת קוקטיילים ולילה במלון בוטיק בעיר העתיקה.
-                        </p>
-                        <div class="trip-meta">
-                            <span>
-                                <i data-lucide="users"></i>
-                                6 משתתפים
-                            </span>
-                            <span>
-                                <i data-lucide="wallet"></i>
-                                ₪4,600 תקציב
-                            </span>
-                        </div>
-                        <div>
-                            <div class="progress" style="--value: 72%; margin: 10px 0 6px;">
-                                <span></span>
+                            <div>
+                                <h3 style="margin: 0; font-size: 1.3rem;">הרי הדולומיטים</h3>
+                                <span class="chip"><i data-lucide="compass"></i> טיול מודרך</span>
                             </div>
-                            <span style="font-size: 0.82rem; color: rgba(15, 23, 42, 0.6);">72% מהמשימות הושלמו</span>
+                            <span style="color: var(--primary-500); font-weight: 600;">נותרו 2 מקומות</span>
+                        </header>
+                        <div class="trip-meta">
+                            <span><i data-lucide="calendar"></i> 4 - 10 באוגוסט · 7 ימים</span>
+                            <span><i data-lucide="users"></i> 8 משתתפים · 2 מדריכים</span>
+                            <span><i data-lucide="wallet"></i> ₪3,900 למטייל</span>
                         </div>
-                        <div class="card-footer">
-                            <span class="preview-users">
-                                <div class="avatar-stack" aria-hidden="true">
-                                    <span class="avatar" style="background: #fee2e2; color: #b91c1c;">מ</span>
-                                    <span class="avatar" style="background: #dbeafe; color: #1d4ed8;">ש</span>
-                                    <span class="avatar" style="background: #dcfce7; color: #15803d;">ל</span>
-                                </div>
-                                <span style="margin-right: 6px;">+3</span>
-                            </span>
-                            <a href="#" class="link-action">
-                                <i data-lucide="arrow-left"></i>
-                                הצטרפו עכשיו
-                            </a>
-                        </div>
+                        <div class="trip-progress"><span style="width: 78%;"></span></div>
+                        <footer>
+                            <span style="color: var(--slate-500); font-size: 0.9rem;">מתחילים בתדרוך אונליין</span>
+                            <button class="ghost-btn"><i data-lucide="log-in"></i> הצטרפות</button>
+                        </footer>
                     </article>
-
                     <article class="trip-card">
                         <header>
-                            <span>02.10.2025</span>
-                            <span class="status-chip planning">
-                                <i data-lucide="calendar-clock"></i>
-                                בתכנון
-                            </span>
-                        </header>
-                        <h4>טיול אופניים בעמק החולה</h4>
-                        <p style="margin: 0; color: rgba(15, 23, 42, 0.65); font-size: 0.92rem;">
-                            רכיבה לאורך הנחלים, פיקניק בטבע ומצפה שקיעה עם מדריך מקומי.
-                        </p>
-                        <div class="trip-meta">
-                            <span>
-                                <i data-lucide="users"></i>
-                                4 משתתפים
-                            </span>
-                            <span>
-                                <i data-lucide="wallet"></i>
-                                ₪2,850 תקציב
-                            </span>
-                        </div>
-                        <div>
-                            <div class="progress" style="--value: 38%; margin: 10px 0 6px;">
-                                <span></span>
+                            <div>
+                                <h3 style="margin: 0; font-size: 1.3rem;">סיאול וקיוטו</h3>
+                                <span class="chip"><i data-lucide="sparkles"></i> קולינריה ותרבות</span>
                             </div>
-                            <span style="font-size: 0.82rem; color: rgba(15, 23, 42, 0.6);">נשאר לקבוע מקומות לינה והסעות</span>
+                            <span style="color: var(--emerald-400); font-weight: 600;">הצצה ראשונה</span>
+                        </header>
+                        <div class="trip-meta">
+                            <span><i data-lucide="calendar"></i> 19 - 28 באוקטובר · 10 ימים</span>
+                            <span><i data-lucide="users"></i> 6 משתתפים · גג 10</span>
+                            <span><i data-lucide="wallet"></i> ₪5,400 למטייל</span>
                         </div>
-                        <div class="card-footer">
-                            <span class="preview-users">
-                                <div class="avatar-stack" aria-hidden="true">
-                                    <span class="avatar" style="background: #ede9fe; color: #5b21b6;">ח</span>
-                                    <span class="avatar" style="background: #cffafe; color: #0f766e;">נ</span>
-                                    <span class="avatar" style="background: #fef9c3; color: #a16207;">א</span>
-                                </div>
-                                <span style="margin-right: 6px;">ממתינים לעוד 2</span>
-                            </span>
-                            <a href="#" class="link-action">
-                                <i data-lucide="arrow-left"></i>
-                                בקשו להצטרף
-                            </a>
-                        </div>
+                        <div class="trip-progress"><span style="width: 46%;"></span></div>
+                        <footer>
+                            <span style="color: var(--slate-500); font-size: 0.9rem;">ההצבעה על מסעדות השבוע</span>
+                            <button class="ghost-btn"><i data-lucide="arrow-right"></i> גלו עוד</button>
+                        </footer>
                     </article>
-
                     <article class="trip-card">
                         <header>
-                            <span>29.07.2025</span>
-                            <span class="status-chip wrapup">
-                                <i data-lucide="star"></i>
-                                מסכם חוויות
-                            </span>
-                        </header>
-                        <h4>חופשת חוף באי רודוס</h4>
-                        <p style="margin: 0; color: rgba(15, 23, 42, 0.65); font-size: 0.92rem;">
-                            שלושה ימים של בטן-גב, שוק מקומי והפלגה לשקיעה עם מוזיקה חיה.
-                        </p>
-                        <div class="trip-meta">
-                            <span>
-                                <i data-lucide="users"></i>
-                                5 משתתפים
-                            </span>
-                            <span>
-                                <i data-lucide="wallet"></i>
-                                ₪6,200 תקציב
-                            </span>
-                        </div>
-                        <div>
-                            <div class="progress" style="--value: 100%; margin: 10px 0 6px;">
-                                <span></span>
+                            <div>
+                                <h3 style="margin: 0; font-size: 1.3rem;">מדבר יהודה בלילה</h3>
+                                <span class="chip"><i data-lucide="moon"></i> חוויית גלמפינג</span>
                             </div>
-                            <span style="font-size: 0.82rem; color: rgba(15, 23, 42, 0.6);">הטיול הסתיים – זמן לסיכומי הוצאות ותמונות</span>
+                            <span style="color: var(--primary-500); font-weight: 600;">זמין להצטרפות</span>
+                        </header>
+                        <div class="trip-meta">
+                            <span><i data-lucide="calendar"></i> 1 - 2 בנובמבר · סופ"ש</span>
+                            <span><i data-lucide="users"></i> 12 משתתפים · מלא 60%</span>
+                            <span><i data-lucide="wallet"></i> ₪1,280 למטייל</span>
                         </div>
-                        <div class="card-footer">
-                            <span class="preview-users">
-                                <div class="avatar-stack" aria-hidden="true">
-                                    <span class="avatar" style="background: #fce7f3; color: #be185d;">ד</span>
-                                    <span class="avatar" style="background: #e0f2fe; color: #0284c7;">י</span>
-                                    <span class="avatar" style="background: #dcfce7; color: #047857;">א</span>
-                                </div>
-                                <span style="margin-right: 6px;">הוסיפו סיפור מסע</span>
-                            </span>
-                            <a href="#" class="link-action">
-                                <i data-lucide="arrow-left"></i>
-                                צפו בסיכום
-                            </a>
-                        </div>
+                        <div class="trip-progress"><span style="width: 60%;"></span></div>
+                        <footer>
+                            <span style="color: var(--slate-500); font-size: 0.9rem;">כולל מופע אסטרונומיה</span>
+                            <button class="ghost-btn"><i data-lucide="log-in"></i> הזמנת מקום</button>
+                        </footer>
                     </article>
+                </div>
+            </section>
+
+            <section class="planner">
+                <div class="glass-card">
+                    <span class="section-kicker"><i data-lucide="pencil"></i> יצירת טיול</span>
+                    <h3 style="margin: 16px 0 18px; font-size: 1.6rem;">הגדירו את היעד וראו תצוגה חיה</h3>
+                    <form class="create-form" autocomplete="off">
+                        <div class="form-group">
+                            <label for="create-destination">לאן נוסעים?</label>
+                            <input type="text" id="create-destination" value="ליסבון, פורטוגל" placeholder="שם היעד">
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="create-date">תאריך יציאה</label>
+                                <input type="date" id="create-date" value="2025-06-15">
+                            </div>
+                            <div class="form-group">
+                                <label for="create-days">משך (ימים)</label>
+                                <div class="range-field">
+                                    <input type="range" id="create-days" min="3" max="14" value="6">
+                                    <span id="days-output">6 ימים</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="create-travelers">מספר משתתפים</label>
+                                <div class="range-field">
+                                    <input type="range" id="create-travelers" min="2" max="12" value="4">
+                                    <span id="travelers-output">4 חברים</span>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="create-budget">תקציב לכל מטייל</label>
+                                <div class="range-field">
+                                    <input type="range" id="create-budget" min="900" max="6500" step="100" value="3200">
+                                    <span id="budget-output">₪3,200</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>סגנון הטיול</label>
+                            <div class="style-select">
+                                <button type="button" class="chip selected" data-style="הרפתקה מודרכת">הרפתקה מודרכת</button>
+                                <button type="button" class="chip" data-style="חופשה רגועה">חופשה רגועה</button>
+                                <button type="button" class="chip" data-style="סופשבוע קולינרי">סופשבוע קולינרי</button>
+                                <button type="button" class="chip" data-style="מסע משפחתי">מסע משפחתי</button>
+                            </div>
+                        </div>
+                        <button type="button" class="primary-btn full-width"><i data-lucide="send"></i> שיתוף התכנון עם הקבוצה</button>
+                    </form>
+                    <div class="trip-preview">
+                        <header>
+                            <div>
+                                <span class="chip" style="background: rgba(99,102,241,0.16);">טיול קבוצתי</span>
+                                <h4 id="preview-destination" style="margin: 10px 0 0; font-size: 1.4rem;">ליסבון, פורטוגל</h4>
+                            </div>
+                            <span id="preview-style" class="chip">הרפתקה מודרכת</span>
+                        </header>
+                        <ul class="preview-details">
+                            <li><i data-lucide="calendar"></i><span id="preview-dates">15 – 20 ביוני 2025 · 6 ימים</span></li>
+                            <li><i data-lucide="users"></i><span id="preview-travelers">4 חברים</span></li>
+                            <li><i data-lucide="wallet"></i><span id="preview-budget">₪3,200 למטייל</span></li>
+                        </ul>
+                        <div style="display: flex; align-items: center; gap: 12px; font-size: 0.9rem; color: var(--slate-500);">
+                            <i data-lucide="sparkles"></i>
+                            <span>TripFlow מייצר עבורכם מסלול מותאם + פעילויות שמתאימות לכל החבורה.</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="glass-card join-card">
+                    <span class="section-kicker"><i data-lucide="door-open"></i> הצטרפות מהירה</span>
+                    <h3 style="margin: 16px 0 12px; font-size: 1.6rem;">כבר קיבלתם קוד? היכנסו לטיול בשניות</h3>
+                    <p style="margin: 0 0 24px; color: var(--slate-500);">הזינו את קוד ההצטרפות והמשיכו מהמקום שהקבוצה הגיעה אליו. אנו נזכיר לכם משימות פתוחות ותאריכים קרובים.</p>
+                    <label for="join-code">קוד הצטרפות</label>
+                    <div class="join-input">
+                        <input type="text" id="join-code" value="TLV9AX" maxlength="12" autocomplete="off">
+                        <button type="button" class="primary-btn"><i data-lucide="log-in"></i> הצטרפות לטיול</button>
+                    </div>
+                    <div class="join-display" id="join-code-display">TLV • 9AX</div>
+                    <div class="invite-list">
+                        <div class="invite-item">
+                            <div>
+                                <strong>ירושלים הקסומה</strong>
+                                <span>יולי 2025 · קוד: JRS542</span>
+                            </div>
+                            <button type="button" class="ghost-btn" data-code="JRS542"><i data-lucide="copy"></i> מילוי קוד</button>
+                        </div>
+                        <div class="invite-item">
+                            <div>
+                                <strong>Roadtrip גלילי</strong>
+                                <span>אוגוסט 2025 · קוד: GLR128</span>
+                            </div>
+                            <button type="button" class="ghost-btn" data-code="GLR128"><i data-lucide="copy"></i> מילוי קוד</button>
+                        </div>
+                        <div class="invite-item">
+                            <div>
+                                <strong>קמפינג סיני</strong>
+                                <span>ספטמבר 2025 · קוד: SND884</span>
+                            </div>
+                            <button type="button" class="ghost-btn" data-code="SND884"><i data-lucide="copy"></i> מילוי קוד</button>
+                        </div>
+                    </div>
                 </div>
             </section>
         </main>
 
         <footer>
-            עיצוב חדש של TripFlow – חווית תכנון טיולים מרגשת ומדויקת יותר לכולם.
+            © 2025 TripFlow. מנוע תכנון הטיולים שדואג לחברים, לתקציב ולזכרונות.
         </footer>
     </div>
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            if (window.lucide) {
-                window.lucide.createIcons();
-            }
+            lucide.createIcons();
 
-            const tripNameInput = document.getElementById('trip-name');
-            const tripDestinationInput = document.getElementById('trip-destination');
-            const tripDateInput = document.getElementById('trip-date');
-            const tripBudgetInput = document.getElementById('trip-budget');
-            const tripDescriptionInput = document.getElementById('trip-description');
+            const destinationInput = document.getElementById('create-destination');
+            const startInput = document.getElementById('create-date');
+            const daysInput = document.getElementById('create-days');
+            const travelersInput = document.getElementById('create-travelers');
+            const budgetInput = document.getElementById('create-budget');
+            const styleButtons = document.querySelectorAll('.style-select .chip');
 
-            const previewName = document.getElementById('preview-trip-name');
             const previewDestination = document.getElementById('preview-destination');
+            const previewDates = document.getElementById('preview-dates');
+            const previewTravelers = document.getElementById('preview-travelers');
             const previewBudget = document.getElementById('preview-budget');
-            const previewDescription = document.getElementById('preview-description');
-            const previewDate = document.getElementById('preview-date');
+            const previewStyle = document.getElementById('preview-style');
+
+            const daysOutput = document.getElementById('days-output');
+            const travelersOutput = document.getElementById('travelers-output');
+            const budgetOutput = document.getElementById('budget-output');
+
+            const joinInput = document.getElementById('join-code');
+            const joinDisplay = document.getElementById('join-code-display');
+
+            const intlRange = new Intl.DateTimeFormat('he-IL', { day: 'numeric', month: 'short' });
+            const intlYear = new Intl.DateTimeFormat('he-IL', { year: 'numeric' });
+
+            function formatTravelers(count) {
+                const num = Number(count);
+                if (num <= 1) {
+                    return 'מטייל אחד';
+                }
+                if (num === 2) {
+                    return 'שני מטיילים';
+                }
+                return `${num} חברים`;
+            }
 
             function formatBudget(value) {
-                if (!value) return '₪0';
-                const number = Number(value.replace(/[^\d]/g, ''));
-                if (!number) return '₪0';
-                return `₪${number.toLocaleString('he-IL')}`;
+                return `₪${Number(value).toLocaleString('he-IL')} למטייל`;
             }
 
-            function formatDate(value) {
-                if (!value) return 'בחרו תאריך';
-                const [year, month, day] = value.split('-');
-                if (!year || !month || !day) return 'בחרו תאריך';
-                return `${day}.${month}.${year}`;
+            function formatDateRange(dateValue, daysValue) {
+                if (!dateValue) {
+                    return 'בחרו תאריך התחלה';
+                }
+                const startDate = new Date(`${dateValue}T00:00:00`);
+                if (Number.isNaN(startDate.getTime())) {
+                    return 'תאריך לא תקין';
+                }
+                const duration = Math.max(Number(daysValue) || 1, 1);
+                const endDate = new Date(startDate);
+                endDate.setDate(endDate.getDate() + duration - 1);
+                const startLabel = intlRange.format(startDate);
+                const endLabel = intlRange.format(endDate);
+                const yearLabel = intlYear.format(startDate);
+                return `${startLabel} – ${endLabel} ${yearLabel} · ${duration} ימים`;
             }
 
             function updatePreview() {
-                previewName.textContent = tripNameInput.value.trim() || 'טיול ללא שם עדיין';
-                previewDestination.textContent = tripDestinationInput.value.trim() || 'יעד עדיין לא נבחר';
-                previewBudget.textContent = formatBudget(tripBudgetInput.value);
-                previewDescription.textContent = tripDescriptionInput.value.trim() || 'כאן תופיע תצוגה מקדימה למסע שלכם. מלאו את הפרטים כדי לראות איך זה נראה.';
-                previewDate.textContent = formatDate(tripDateInput.value);
+                previewDestination.textContent = destinationInput.value.trim() || 'טיול ללא שם';
+                previewDates.textContent = formatDateRange(startInput.value, daysInput.value);
+                previewTravelers.textContent = formatTravelers(travelersInput.value);
+                previewBudget.textContent = formatBudget(budgetInput.value);
+                daysOutput.textContent = `${daysInput.value} ימים`;
+                travelersOutput.textContent = formatTravelers(travelersInput.value);
+                budgetOutput.textContent = `₪${Number(budgetInput.value).toLocaleString('he-IL')}`;
             }
 
-            [tripNameInput, tripDestinationInput, tripBudgetInput, tripDescriptionInput, tripDateInput].forEach(input => {
-                if (input) {
-                    input.addEventListener('input', updatePreview);
-                    input.addEventListener('change', updatePreview);
-                }
+            [destinationInput, startInput, daysInput, travelersInput, budgetInput].forEach((el) => {
+                el.addEventListener('input', updatePreview);
+                el.addEventListener('change', updatePreview);
+            });
+
+            styleButtons.forEach((btn) => {
+                btn.addEventListener('click', () => {
+                    styleButtons.forEach((b) => b.classList.remove('selected'));
+                    btn.classList.add('selected');
+                    previewStyle.textContent = btn.dataset.style;
+                });
+            });
+
+            function formatJoinCode(code) {
+                const cleaned = code.toUpperCase().replace(/[^A-Z0-9]/g, '');
+                const groups = cleaned.match(/.{1,3}/g) || [];
+                return groups.join(' • ');
+            }
+
+            joinInput.addEventListener('input', () => {
+                joinInput.value = joinInput.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+                joinDisplay.textContent = formatJoinCode(joinInput.value) || 'הקלידו קוד';
+            });
+
+            document.querySelectorAll('[data-code]').forEach((button) => {
+                button.addEventListener('click', () => {
+                    const code = button.dataset.code || '';
+                    joinInput.value = code;
+                    joinInput.dispatchEvent(new Event('input'));
+                });
             });
 
             updatePreview();
-
-            const joinInputs = Array.from(document.querySelectorAll('.join-code-input'));
-            const pasteButton = document.getElementById('paste-code');
-            const copyInviteButton = document.getElementById('copy-invite');
-
-            function normaliseCode(text) {
-                return text.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
-            }
-
-            joinInputs.forEach((input, index) => {
-                input.addEventListener('input', (event) => {
-                    const value = normaliseCode(event.target.value);
-                    event.target.value = value.slice(0, 4);
-                    if (value.length >= 4 && joinInputs[index + 1]) {
-                        joinInputs[index + 1].focus();
-                        joinInputs[index + 1].select();
-                    }
-                });
-
-                input.addEventListener('keydown', (event) => {
-                    if (event.key === 'Backspace' && !event.target.value && joinInputs[index - 1]) {
-                        joinInputs[index - 1].focus();
-                    }
-                });
-            });
-
-            if (pasteButton && navigator.clipboard) {
-                pasteButton.addEventListener('click', async () => {
-                    try {
-                        const text = normaliseCode(await navigator.clipboard.readText());
-                        joinInputs.forEach((input, idx) => {
-                            const segment = text.slice(idx * 4, idx * 4 + 4);
-                            input.value = segment;
-                        });
-                        let lastFilled = null;
-                        for (let i = joinInputs.length - 1; i >= 0; i -= 1) {
-                            if (joinInputs[i].value) {
-                                lastFilled = joinInputs[i];
-                                break;
-                            }
-                        }
-                        if (lastFilled) {
-                            lastFilled.focus();
-                        }
-                    } catch (error) {
-                        pasteButton.textContent = 'לא הצלחנו לקרוא מהלוח';
-                        pasteButton.disabled = true;
-                    }
-                });
-            }
-
-            if (copyInviteButton && navigator.clipboard) {
-                copyInviteButton.addEventListener('click', async () => {
-                    const mockCode = 'trip-8724-flow-5519'.toUpperCase();
-                    try {
-                        await navigator.clipboard.writeText(mockCode);
-                        copyInviteButton.textContent = 'הקוד לדוגמה הועתק!';
-                        setTimeout(() => {
-                            copyInviteButton.innerHTML = '<i data-lucide="copy"></i> שתפו קוד לדוגמה';
-                            window.lucide && window.lucide.createIcons();
-                        }, 2000);
-                    } catch (error) {
-                        copyInviteButton.textContent = 'שיתוף הקוד נכשל';
-                    }
-                });
-            }
+            joinInput.dispatchEvent(new Event('input'));
         });
     </script>
 </body>
